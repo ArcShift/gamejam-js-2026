@@ -1,7 +1,6 @@
 export interface IUnit {
     name: string;
     description: string;
-    hp: number;
     maxHp: number;
     attack: number;
     defense: number;
@@ -15,18 +14,18 @@ export enum UnitType {
 export class Unit implements IUnit {
     name: string;
     description: string;
-    hp: number;
     maxHp: number;
+    hp: number;
     attack: number;
     defense: number;
     speed: number;
     type: UnitType;
 
-    constructor(name: string, description: string, hp: number, maxHp: number, attack: number, defense: number, speed: number, type: UnitType) {
+    constructor(name: string, description: string, maxHp: number, attack: number, defense: number, speed: number, type: UnitType) {
         this.name = name;
         this.description = description;
-        this.hp = hp;
         this.maxHp = maxHp;
+        this.hp = maxHp;
         this.attack = attack;
         this.defense = defense;
         this.speed = speed;
