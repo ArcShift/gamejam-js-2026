@@ -1,5 +1,3 @@
-import { Naration } from "../subscene/Naration";
-
 interface ICampaign {
     title: string;
     opening_naration?: string;

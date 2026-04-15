@@ -1,10 +1,12 @@
 import { Scene } from 'phaser';
+import { Sidebar } from '../ui/Sidebar';
 
 export class Game extends Scene
 {
     camera: Phaser.Cameras.Scene2D.Camera;
     background: Phaser.GameObjects.Image;
     msg_text : Phaser.GameObjects.Text;
+    sidebar: Sidebar;
 
     constructor ()
     {
@@ -25,6 +27,11 @@ export class Game extends Scene
             align: 'center'
         });
         this.msg_text.setOrigin(0.5);
+
+        const width = this.scale.width;
+        const height = this.scale.height;
+        const sidebarWidth = 250;
+        this.sidebar = new Sidebar(this, width - sidebarWidth, 0, sidebarWidth, height);
 
         this.input.once('pointerdown', () => {
 
