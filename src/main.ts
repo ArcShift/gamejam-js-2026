@@ -3,6 +3,7 @@ import { GameOver } from './scenes/GameOver';
 import { Game as MainGame } from './scenes/Game';
 import { MainMenu } from './scenes/MainMenu';
 import { Campaign } from './scenes/Campaign';
+import { Pause } from './subscene/Pause';
 import { AUTO, Game } from 'phaser';
 import { Preloader } from './scenes/Preloader';
 
@@ -23,7 +24,8 @@ const config: Phaser.Types.Core.GameConfig = {
         MainMenu,
         Campaign,
         MainGame,
-        GameOver
+        GameOver,
+        Pause
     ]
 };
 
