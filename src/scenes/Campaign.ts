@@ -38,31 +38,42 @@ export class Campaign extends Scene {
         const underline = this.add.rectangle(0, 30, 400, 2, 0x00ffff);
         headerContainer.add([titleText, underline]);
 
-        const gridScaleX = 25;
-        const gridScaleY = 20;
-        const offsetX = 150;
-        const offsetY = 150;
+        const gridCols = 4;
+        const spacingX = 220;
+        const spacingY = 160;
+        const startX = (width - (gridCols - 1) * spacingX) / 2;
+        const startY = 200;
+
+        const nodePositions: { x: number, y: number }[] = [];
+
+        // Pre-calculate positions for nodes and connections
+        campaigns.forEach((mission, index) => {
+            const row = Math.floor(index / gridCols);
+            let col = index % gridCols;
+
+            // Zig-zag pattern: Row 0 left-to-right, Row 1 right-to-left, etc.
+            if (row % 2 === 1) {
+                col = (gridCols - 1) - col;
+            }
+
+            const x = startX + col * spacingX;
+            const y = startY + row * spacingY;
+            nodePositions.push({ x, y });
+        });
 
         // Draw connections
         const connections = this.add.graphics();
-        connections.lineStyle(2, 0x00ffff, 0.2);
+        connections.lineStyle(3, 0x00ffff, 0.2);
 
-        for (let i = 0; i < campaigns.length - 1; i++) {
-            const startNode = campaigns[i];
-            const endNode = campaigns[i + 1];
-            
-            const x1 = offsetX + startNode.grid_x * gridScaleX;
-            const y1 = offsetY + startNode.grid_y * gridScaleY;
-            const x2 = offsetX + endNode.grid_x * gridScaleX;
-            const y2 = offsetY + endNode.grid_y * gridScaleY;
-
-            connections.lineBetween(x1, y1, x2, y2);
+        for (let i = 0; i < nodePositions.length - 1; i++) {
+            const start = nodePositions[i];
+            const end = nodePositions[i + 1];
+            connections.lineBetween(start.x, start.y, end.x, end.y);
         }
 
         // Add nodes
         campaigns.forEach((mission, index) => {
-            const x = offsetX + mission.grid_x * gridScaleX;
-            const y = offsetY + mission.grid_y * gridScaleY;
+            const { x, y } = nodePositions[index];
 
             // Mock unlocked logic: assume first 2 are unlocked
             const isUnlocked = index < 2; 
