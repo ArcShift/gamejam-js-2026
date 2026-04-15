@@ -17,36 +17,30 @@ export class Map extends GameObjects.Container {
         bg.setOrigin(0);
         this.add(bg);
 
-        // We use a Graphics object for the grid to keep it performance-friendly
-        const graphics = scene.add.graphics();
-        this.add(graphics);
-
-        // Draw the grid cells
-        graphics.fillStyle(0x1a1a1a, 1);
-        graphics.lineStyle(2, 0x333333, 1);
-
+        // Create the grid cells using individual rectangles for better lifecycle stability
         for (let gy = 0; gy < campaign.map_height; gy++) {
             for (let gx = 0; gx < campaign.map_width; gx++) {
                 const cx = gx * totalCellSize;
                 const cy = gy * totalCellSize;
 
-                // Draw cell background
-                graphics.fillRect(cx, cy, this.cellSize, this.cellSize);
+                const cell = scene.add.rectangle(cx, cy, this.cellSize, this.cellSize, 0x1a1a1a);
+                cell.setOrigin(0);
+                cell.setStrokeStyle(1, 0x333333);
                 
-                // Draw cell border
-                graphics.strokeRect(cx, cy, this.cellSize, this.cellSize);
+                // Tech border detail
+                const inner = scene.add.rectangle(cx + 4, cy + 4, this.cellSize - 8, this.cellSize - 8);
+                inner.setOrigin(0);
+                inner.setStrokeStyle(1, 0x444444, 0.5);
 
-                // Add a subtle tech-style inner detail
-                graphics.lineStyle(1, 0x444444, 0.5);
-                graphics.strokeRect(cx + 4, cy + 4, this.cellSize - 8, this.cellSize - 8);
+                this.add([cell, inner]);
             }
         }
 
         // Optional: Add some "glow" to the edges of the map
-        const glow = scene.add.graphics();
-        glow.lineStyle(4, 0x00ffff, 0.1);
-        glow.strokeRect(-2, -2, gridWidth + 4, gridHeight + 4);
-        this.add(glow);
+        const borderGlow = scene.add.rectangle(-2, -2, gridWidth + 4, gridHeight + 4);
+        borderGlow.setOrigin(0);
+        borderGlow.setStrokeStyle(2, 0x00ffff, 0.3);
+        this.add(borderGlow);
 
         scene.add.existing(this);
         

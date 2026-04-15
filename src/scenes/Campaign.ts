@@ -1,13 +1,20 @@
 import { Scene } from 'phaser';
 import { campaigns } from '../entity/Campaign';
+import { GManager } from '../system/GameManager';
 
 export class Campaign extends Scene {
+    private isTransitioning: boolean = false;
+
     constructor() {
         super('Campaign');
     }
 
     create() {
+        this.isTransitioning = false;
         const { width, height } = this.scale;
+        
+        // Reset camera in case it was faded out from previous session
+        this.cameras.main.fadeIn(200);
 
         // Dark sci-fi background
         const bg = this.add.graphics();
@@ -124,9 +131,13 @@ export class Campaign extends Scene {
                 });
 
                 ring.on('pointerdown', () => {
+                    if (this.isTransitioning) return;
+                    this.isTransitioning = true;
+                    
+                    GManager.startMission(mission);
                     this.cameras.main.fadeOut(500, 0, 0, 0);
                     this.cameras.main.once('camerafadeoutcomplete', () => {
-                        this.scene.start('Game', { mission });
+                        this.scene.start('Game');
                     });
                 });
 

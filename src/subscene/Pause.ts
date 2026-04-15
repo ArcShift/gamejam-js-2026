@@ -53,6 +53,7 @@ export class Pause extends Scene {
 
         quitBtn.on('pointerdown', () => {
             this.scene.stop('Game');
+            this.scene.stop(); // Stop this Pause scene
             this.scene.start('MainMenu');
         });
 

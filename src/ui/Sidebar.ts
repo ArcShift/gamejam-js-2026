@@ -2,7 +2,6 @@ import { Scene, GameObjects } from 'phaser';
 
 export class Sidebar extends GameObjects.Container {
     private bg: GameObjects.Rectangle;
-    private fpsText: GameObjects.Text;
 
     constructor(scene: Scene, x: number, y: number, width: number, height: number) {
         super(scene, x, y);
@@ -25,21 +24,6 @@ export class Sidebar extends GameObjects.Container {
         // Pause Button
         const pauseBtn = this.createPauseButton(scene, width / 2, 80);
         this.add(pauseBtn);
-        
-        // Dev FPS counter
-        const isDev = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-        if (isDev) {
-            this.fpsText = scene.add.text(10, height - 25, 'FPS: 00', {
-                fontSize: '14px',
-                color: '#00ff00',
-                fontFamily: 'monospace'
-            });
-            this.add(this.fpsText);
-            
-            scene.events.on('update', () => {
-                this.fpsText.setText(`FPS: ${Math.round(scene.game.loop.actualFps)}`);
-            });
-        }
 
         // Add the container to the scene
         scene.add.existing(this);
@@ -54,7 +38,6 @@ export class Sidebar extends GameObjects.Container {
             fontSize: '16px',
             fontFamily: 'Arial',
             color: '#ffffff',
-            fontWeight: 'bold'
         }).setOrigin(0.5);
 
         container.add([bg, text]);
