@@ -12,8 +12,8 @@ interface IHumanUnit extends IUnit {
 
 class HumanUnit extends Unit implements IHumanUnit {
     faction: HumanFaction;
-    constructor(name: string, description: string, hp: number, maxHp: number, attack: number, defense: number, speed: number, faction: HumanFaction) {
-        super(name, description, hp, maxHp, attack, defense, speed, UnitType.Human);
+    constructor(name: string, description: string, maxHp: number, attack: number, defense: number, speed: number, faction: HumanFaction) {
+        super(name, description, maxHp, attack, defense, speed, UnitType.Human);
         this.faction = faction;
     }
 }
@@ -21,7 +21,6 @@ class HumanUnit extends Unit implements IHumanUnit {
 const humans: IHumanUnit[] = [{
         name: "Thug",
         description: "Street thug. usually use melee attack",
-        hp: 100,
         maxHp: 100,
         attack: 10,
         defense: 10,
@@ -30,7 +29,6 @@ const humans: IHumanUnit[] = [{
     }, {
         name: "Mercenary",
         description: "Mercenary. usually use range attack",
-        hp: 100,
         maxHp: 100,
         attack: 10,
         defense: 10,
@@ -39,7 +37,6 @@ const humans: IHumanUnit[] = [{
     }, {
         name: "Tyrant",
         description: "Tyrant. Spawn other unit",
-        hp: 100,
         maxHp: 100,
         attack: 10,
         defense: 10,
