@@ -1,12 +1,145 @@
-interface ICampaign {
-    title: string;
-    opening_naration?: string;
-    closing_naration?: string;
-}
+import { Scene } from 'phaser';
+import { campaigns } from '../entity/Campaign';
 
-const campaigns: ICampaign[] = [
-    {
-        title: "Campaign 1",
-        opening_naration: "intro"
+export class Campaign extends Scene {
+    constructor() {
+        super('Campaign');
     }
-];
+
+    create() {
+        const { width, height } = this.scale;
+
+        // Dark sci-fi background
+        const bg = this.add.graphics();
+        bg.fillGradientStyle(0x000011, 0x000011, 0x000522, 0x000522, 1);
+        bg.fillRect(0, 0, width, height);
+
+        // Add some grid lines for aesthetic
+        const grid = this.add.graphics();
+        grid.lineStyle(1, 0x00ffff, 0.05);
+        for (let x = 0; x < width; x += 40) {
+            grid.lineBetween(x, 0, x, height);
+        }
+        for (let y = 0; y < height; y += 40) {
+            grid.lineBetween(0, y, width, y);
+        }
+
+        // Header
+        const headerContainer = this.add.container(width / 2, 60);
+        const titleText = this.add.text(0, 0, 'MISSION SELECTION', {
+            fontSize: '42px',
+            fontFamily: 'Orbitron, Arial Black',
+            color: '#00ffff',
+            stroke: '#004444',
+            strokeThickness: 4
+        }).setOrigin(0.5);
+        
+        // Underline effect
+        const underline = this.add.rectangle(0, 30, 400, 2, 0x00ffff);
+        headerContainer.add([titleText, underline]);
+
+        const gridScaleX = 25;
+        const gridScaleY = 20;
+        const offsetX = 150;
+        const offsetY = 150;
+
+        // Draw connections
+        const connections = this.add.graphics();
+        connections.lineStyle(2, 0x00ffff, 0.2);
+
+        for (let i = 0; i < campaigns.length - 1; i++) {
+            const startNode = campaigns[i];
+            const endNode = campaigns[i + 1];
+            
+            const x1 = offsetX + startNode.grid_x * gridScaleX;
+            const y1 = offsetY + startNode.grid_y * gridScaleY;
+            const x2 = offsetX + endNode.grid_x * gridScaleX;
+            const y2 = offsetY + endNode.grid_y * gridScaleY;
+
+            connections.lineBetween(x1, y1, x2, y2);
+        }
+
+        // Add nodes
+        campaigns.forEach((mission, index) => {
+            const x = offsetX + mission.grid_x * gridScaleX;
+            const y = offsetY + mission.grid_y * gridScaleY;
+
+            // Mock unlocked logic: assume first 2 are unlocked
+            const isUnlocked = index < 2; 
+
+            // Node container
+            const nodeContainer = this.add.container(x, y);
+
+            // Outer ring
+            const ring = this.add.circle(0, 0, 18, isUnlocked ? 0x00ffff : 0x333333, 0.2);
+            ring.setStrokeStyle(2, isUnlocked ? 0x00ffff : 0x555555);
+            
+            // Core
+            const core = this.add.circle(0, 0, 10, isUnlocked ? 0x00ffff : 0x444444);
+            
+            // Label
+            const label = this.add.text(0, 35, mission.title, {
+                fontSize: '14px',
+                fontFamily: 'Arial',
+                color: isUnlocked ? '#ffffff' : '#666666',
+                align: 'center'
+            }).setOrigin(0.5);
+
+            nodeContainer.add([ring, core, label]);
+
+            if (isUnlocked) {
+                ring.setInteractive({ useHandCursor: true });
+                
+                ring.on('pointerover', () => {
+                    this.tweens.add({
+                        targets: [ring, core],
+                        scaleX: 1.2,
+                        scaleY: 1.2,
+                        duration: 200,
+                        ease: 'Power2'
+                    });
+                    label.setColor('#00ffff');
+                });
+
+                ring.on('pointerout', () => {
+                    this.tweens.add({
+                        targets: [ring, core],
+                        scaleX: 1,
+                        scaleY: 1,
+                        duration: 200,
+                        ease: 'Power2'
+                    });
+                    label.setColor('#ffffff');
+                });
+
+                ring.on('pointerdown', () => {
+                    this.cameras.main.fadeOut(500, 0, 0, 0);
+                    this.cameras.main.once('camerafadeoutcomplete', () => {
+                        this.scene.start('Game', { mission });
+                    });
+                });
+
+                // Idle glow animation
+                this.tweens.add({
+                    targets: ring,
+                    alpha: 0.6,
+                    duration: 1000,
+                    yoyo: true,
+                    repeat: -1,
+                    ease: 'Sine.easeInOut'
+                });
+            }
+        });
+
+        // Add back button
+        const backBtn = this.add.text(width - 50, height - 30, 'BACK TO MENU', {
+            fontSize: '18px',
+            fontFamily: 'Arial',
+            color: '#aaaaaa'
+        }).setOrigin(1, 0.5).setInteractive({ useHandCursor: true });
+
+        backBtn.on('pointerdown', () => {
+            this.scene.start('MainMenu');
+        });
+    }
+}
