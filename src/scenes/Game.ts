@@ -1,42 +1,52 @@
 import { Scene } from 'phaser';
 import { Sidebar } from '../ui/Sidebar';
+import { Map } from '../ui/Map';
+import { ICampaign } from '../entity/Campaign';
 
 export class Game extends Scene
 {
     camera: Phaser.Cameras.Scene2D.Camera;
     background: Phaser.GameObjects.Image;
-    msg_text : Phaser.GameObjects.Text;
     sidebar: Sidebar;
+    map: Map;
+    mission: ICampaign;
 
     constructor ()
     {
         super('Game');
     }
 
+    init (data: { mission: ICampaign })
+    {
+        this.mission = data.mission;
+    }
+
     create ()
     {
         this.camera = this.cameras.main;
-        this.camera.setBackgroundColor(0x00ff00);
-
-        this.background = this.add.image(512, 384, 'background');
-        this.background.setAlpha(0.5);
-
-        this.msg_text = this.add.text(512, 384, 'Make something fun!\nand share it with us:\nsupport@phaser.io', {
-            fontFamily: 'Arial Black', fontSize: 38, color: '#ffffff',
-            stroke: '#000000', strokeThickness: 8,
-            align: 'center'
-        });
-        this.msg_text.setOrigin(0.5);
+        this.camera.setBackgroundColor(0x0a0a0a);
 
         const width = this.scale.width;
         const height = this.scale.height;
         const sidebarWidth = 250;
+
+        // Initialize Map
+        if (this.mission) {
+            this.map = new Map(this, 50, 50, this.mission);
+            
+            // Basic camera bounds based on map size
+            this.camera.setBounds(0, 0, this.map.width + 100 + sidebarWidth, this.map.height + 100);
+            
+            // Make map draggable for large maps
+            this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+                if (!pointer.isDown) return;
+                this.camera.scrollX -= (pointer.x - pointer.prevPosition.x) / this.camera.zoom;
+                this.camera.scrollY -= (pointer.y - pointer.prevPosition.y) / this.camera.zoom;
+            });
+        }
+
+        // Sidebar stays fixed to screen
         this.sidebar = new Sidebar(this, width - sidebarWidth, 0, sidebarWidth, height);
-
-        this.input.once('pointerdown', () => {
-
-            this.scene.start('GameOver');
-
-        });
+        this.sidebar.setScrollFactor(0);
     }
 }
