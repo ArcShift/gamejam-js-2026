@@ -87,7 +87,7 @@ export class Game extends Scene
             }
 
             // Spawn Scrap Metal (20% of grid cells - can overlap with player and humans)
-            const scrapCount = Math.floor(totalCellSize * 0.2);
+            const scrapCount = Math.floor(allCells.length * 0.2);
             const availableScrapCells = [...allCells];
 
             // Spawn the scrap
@@ -107,7 +107,7 @@ export class Game extends Scene
             }
 
             // Spawn Human Units (5% of grid cells)
-            const humanCount = Math.floor(totalCellSize * 0.05);
+            const humanCount = Math.floor(allCells.length * 0.05);
             
             // Calculate distribution [Thug, Merc, Tyrant] based on 9:3:1 ratio
             const weights = [9, 3, 1];
