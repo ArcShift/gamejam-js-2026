@@ -19,6 +19,19 @@ export class GameUI extends Scene {
         const gameScene = this.scene.get('Game');
         gameScene.events.on('cell-selected', (data: { unit: any, scrap: any }) => {
             this.sidebar.updateDetails(data.unit, data.scrap);
+            
+            // Check if we should show the collect button
+            // If selecting a cell with both player AND scrap
+            if (data.unit && data.unit.name === 'CORE-01' && data.scrap) {
+                this.sidebar.showCollectButton(true, data.scrap.value);
+            } else {
+                this.sidebar.showCollectButton(false);
+            }
+        });
+
+        // Forward collect request to Game scene
+        this.events.on('collect-scrap-request', () => {
+            gameScene.events.emit('collect-scrap-action');
         });
 
         // Listen for AP updates from the Game scene
@@ -30,6 +43,7 @@ export class GameUI extends Scene {
         this.events.on('shutdown', () => {
             gameScene.events.off('cell-selected');
             gameScene.events.off('ap-updated');
+            gameScene.events.off('collect-scrap-action');
         });
     }
 }

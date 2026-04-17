@@ -62,4 +62,8 @@ export class Scrap {
     setPosition(x: number, y: number) {
         this.container.setPosition(x, y);
     }
+
+    destroy() {
+        this.container.destroy();
+    }
 }

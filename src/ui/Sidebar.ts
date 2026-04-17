@@ -14,6 +14,10 @@ export class Sidebar extends GameObjects.Container {
     private apBarBg: GameObjects.Rectangle;
     private apBarFill: GameObjects.Rectangle;
     private apBarWidth: number;
+    private collectBtn: GameObjects.Container;
+    private collectBtnText: GameObjects.Text;
+    private collectBtnBg: GameObjects.Rectangle;
+    private carriedScrapText: GameObjects.Text;
 
     constructor(scene: Scene, x: number, y: number, width: number, height: number) {
         super(scene, x, y);
@@ -46,6 +50,9 @@ export class Sidebar extends GameObjects.Container {
         // Win Button (temp for testing narration)
         const winBtn = this.createWinButton(scene, width / 2, height - 40);
         this.add(winBtn);
+
+        // Collect Scrap Button (hidden by default)
+        this.createCollectButton(scene, width / 2, 420);
 
         // Add the container to the scene
         scene.add.existing(this);
@@ -173,9 +180,15 @@ export class Sidebar extends GameObjects.Container {
             value: scene.add.text(0, scrapY + 50, '', { fontSize: '14px', color: '#ffaa00' })
         };
 
+        this.carriedScrapText = scene.add.text(0, scrapY + 75, '', {
+            fontSize: '12px',
+            fontFamily: 'Orbitron',
+            color: '#00ffff'
+        });
+
         this.detailsContainer.add([
             unitTitle, this.unitInfo.name, this.unitInfo.hp, this.unitInfo.stats, this.unitInfo.desc,
-            scrapTitle, this.scrapInfo.title, this.scrapInfo.value
+            scrapTitle, this.scrapInfo.title, this.scrapInfo.value, this.carriedScrapText
         ]);
     }
 
@@ -199,6 +212,56 @@ export class Sidebar extends GameObjects.Container {
             this.scrapInfo.title.setText('NONE');
             this.scrapInfo.value.setText('');
         }
+
+        // Show carried scrap if selecting player
+        if (unit && unit.name === 'CORE-01') {
+            this.carriedScrapText.setText(`CARRIED: ${unit.scrap} / 100`);
+            this.carriedScrapText.setVisible(true);
+        } else {
+            this.carriedScrapText.setVisible(false);
+        }
+
+        // Auto-hide collect button if no scrap or not player
+        if (!scrap || !unit || unit.name !== 'CORE-01') {
+            this.showCollectButton(false);
+        }
+    }
+
+    public showCollectButton(visible: boolean, cost: number = 0) {
+        this.collectBtn.setVisible(visible);
+        if (visible) {
+            this.collectBtnText.setText(`COLLECT (${cost} AP)`);
+        }
+    }
+
+    private createCollectButton(scene: Scene, x: number, y: number) {
+        this.collectBtn = scene.add.container(x, y);
+        this.collectBtnBg = scene.add.rectangle(0, 0, 200, 45, 0xffaa00, 0.2);
+        this.collectBtnBg.setStrokeStyle(2, 0xffaa00);
+        
+        this.collectBtnText = scene.add.text(0, 0, 'COLLECT SCRAP', {
+            fontSize: '14px',
+            fontFamily: 'Orbitron',
+            color: '#ffffff'
+        }).setOrigin(0.5);
+
+        this.collectBtn.add([this.collectBtnBg, this.collectBtnText]);
+        this.add(this.collectBtn);
+
+        this.collectBtnBg.setInteractive({ useHandCursor: true });
+        this.collectBtn.setVisible(false);
+
+        this.collectBtnBg.on('pointerover', () => {
+            this.collectBtnBg.setFillStyle(0xffaa00, 0.4);
+        });
+
+        this.collectBtnBg.on('pointerout', () => {
+            this.collectBtnBg.setFillStyle(0xffaa00, 0.2);
+        });
+
+        this.collectBtnBg.on('pointerdown', () => {
+            this.scene.events.emit('collect-scrap-request');
+        });
     }
 
     private createPauseButton(scene: Scene, x: number, y: number): GameObjects.Container {

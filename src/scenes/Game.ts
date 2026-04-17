@@ -162,11 +162,16 @@ export class Game extends Scene
                                 duration: 200,
                                 ease: 'Power2',
                                 onComplete: () => {
-                                    // Reset selection after move
-                                    this.selectedGx = -1;
-                                    this.selectedGy = -1;
-                                    this.selector.setVisible(false);
-                                    this.arrow.setVisible(false);
+                                     // Keep player selected after move
+                                     this.selectedGx = gx;
+                                     this.selectedGy = gy;
+                                     this.selector.setPosition(this.mapOffsetX + gx * this.totalCellSize, this.mapOffsetY + gy * this.totalCellSize);
+                                     this.selector.setVisible(true);
+                                     this.arrow.setVisible(false);
+
+                                     // Update sidebar details for new position (e.g. to show collect button)
+                                     const scrap = this.scrap.get(`${gx},${gy}`);
+                                     this.events.emit('cell-selected', { unit: this.player, scrap });
 
                                     // Emit AP update for sidebar
                                     this.events.emit('ap-updated', {
@@ -423,6 +428,50 @@ export class Game extends Scene
                 ap: this.player.ap,
                 turn: 0,
                 activeUnitName: 'INITIALIZING'
+            });
+
+            // Handle scrap collection
+            this.events.on('collect-scrap-action', () => {
+                const key = `${this.player.gx},${this.player.gy}`;
+                const scrap = this.scrap.get(key);
+                
+                if (scrap) {
+                    // Check if player has enough AP
+                    if (this.player.ap < scrap.value) {
+                        this.showNotEnoughAP();
+                        return;
+                    }
+
+                    // Consume AP and collect scrap
+                    this.player.ap -= scrap.value;
+                    this.player.scrap = Math.min(Player.MAX_SCRAP, this.player.scrap + scrap.value);
+                    
+                    // Remove scrap from map
+                    this.scrap.delete(key);
+                    
+                    // Visual effect for collection
+                    this.tweens.add({
+                        targets: scrap.container,
+                        y: scrap.container.y - 50,
+                        alpha: 0,
+                        scale: 1.5,
+                        duration: 500,
+                        ease: 'Power2',
+                        onComplete: () => {
+                            scrap.destroy();
+                        }
+                    });
+
+                    // Emit updates
+                    this.events.emit('ap-updated', {
+                        ap: this.player.ap,
+                        turn: this.turnManager.turnCount,
+                        activeUnitName: this.player.name
+                    });
+                    
+                    // Update selection info (now with no scrap)
+                    this.events.emit('cell-selected', { unit: this.player, scrap: null });
+                }
             });
 
             // START THE LOOP
