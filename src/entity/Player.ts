@@ -1,6 +1,7 @@
 import { Scene } from 'phaser';
+import { Unit, UnitType } from './Unit';
 
-export class Player {
+export class Player extends Unit {
     container: Phaser.GameObjects.Container;
     name: string = "CORE-01";
     description: string = "Tecnomancer.";
@@ -13,6 +14,7 @@ export class Player {
     speed: number = 12;
 
     constructor(scene: Scene) {
+        super("CORE-01", "Tecnomancer.", 100, 25, 15, 12, UnitType.Machine);
         this.container = scene.add.container(0, 0);
         
         const size = 48; // A bit smaller than the 64px cell

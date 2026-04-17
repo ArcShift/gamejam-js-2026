@@ -15,11 +15,13 @@ export class Unit implements IUnit {
     name: string;
     description: string;
     maxHp: number;
-    hp: number;
     attack: number;
     defense: number;
     speed: number;
     type: UnitType;
+    
+    hp: number;
+    ap: number;
 
     constructor(name: string, description: string, maxHp: number, attack: number, defense: number, speed: number, type: UnitType) {
         this.name = name;

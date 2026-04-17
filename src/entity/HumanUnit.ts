@@ -38,14 +38,20 @@ export class HumanUnit extends Unit implements IHumanUnit {
         // Arms
         const lArm = scene.add.rectangle(-12, 2, 6, 16, baseColor);
         const rArm = scene.add.rectangle(12, 2, 6, 16, baseColor);
+
+        //legs
+        const lLeg = scene.add.rectangle(-7, 25, 6, 15, baseColor);
+        const rLeg = scene.add.rectangle(7, 25, 6, 15, baseColor);
         
-        this.container.add([shadow, lArm, rArm, body, head]);
+        this.container.add([shadow, lArm, rArm, body, head, lLeg, rLeg]);
 
         // Detail based on type
         if (config.name === "Tyrant") {
             // Golden crown
+
             const crown = scene.add.triangle(0, -22, -7, 0, 7, 0, 0, -10, 0xffd700);
             crown.setStrokeStyle(1, 0x000000);
+            crown.setPosition(7,-12);
             this.container.add(crown);
             
             // Glowing aura
