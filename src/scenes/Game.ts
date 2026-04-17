@@ -435,12 +435,16 @@ export class Game extends Scene
                 const key = `${this.player.gx},${this.player.gy}`;
                 const scrap = this.scrap.get(key);
                 
-                if (scrap) {
+                // Only allow if it's the player's turn (IDLE state)
+                if (scrap && this.turnManager.state === SystemState.IDLE) {
                     // Check if player has enough AP
                     if (this.player.ap < scrap.value) {
                         this.showNotEnoughAP();
                         return;
                     }
+
+                    // Block further input during animation
+                    this.turnManager.state = SystemState.ANIMATING;
 
                     // Consume AP and collect scrap
                     this.player.ap -= scrap.value;
@@ -459,6 +463,9 @@ export class Game extends Scene
                         ease: 'Power2',
                         onComplete: () => {
                             scrap.destroy();
+                            
+                            // Formally end player action/turn
+                            this.turnManager.endPlayerAction();
                         }
                     });
 
