@@ -28,8 +28,12 @@ export class Sidebar extends GameObjects.Container {
         this.createDetailsPanel(scene, width, height);
 
         // Pause Button (moved to bottom)
-        const pauseBtn = this.createPauseButton(scene, width / 2, height - 40);
+        const pauseBtn = this.createPauseButton(scene, width / 2, height - 90);
         this.add(pauseBtn);
+
+        // Win Button (temp for testing narration)
+        const winBtn = this.createWinButton(scene, width / 2, height - 40);
+        this.add(winBtn);
 
         // Add the container to the scene
         scene.add.existing(this);
@@ -122,6 +126,40 @@ export class Sidebar extends GameObjects.Container {
             scene.scene.pause('Game');
             scene.scene.pause('GameUI');
             scene.scene.launch('Pause');
+        });
+
+        return container;
+    }
+
+    private createWinButton(scene: Scene, x: number, y: number): GameObjects.Container {
+        const container = scene.add.container(x, y);
+        const bg = scene.add.rectangle(0, 0, 200, 45, 0x004400);
+        bg.setStrokeStyle(2, 0x00aa00);
+        
+        const text = scene.add.text(0, 0, 'FINISH MISSION', {
+            fontSize: '16px',
+            fontFamily: 'Arial',
+            color: '#ffffff',
+        }).setOrigin(0.5);
+
+        container.add([bg, text]);
+        bg.setInteractive({ useHandCursor: true });
+
+        bg.on('pointerover', () => {
+            bg.setFillStyle(0x006600);
+            bg.setStrokeStyle(2, 0x00ff00);
+        });
+        
+        bg.on('pointerout', () => {
+            bg.setFillStyle(0x004400);
+            bg.setStrokeStyle(2, 0x00aa00);
+        });
+
+        bg.on('pointerdown', () => {
+            const gameScene = scene.scene.get('Game') as any;
+            if (gameScene && gameScene.winMission) {
+                gameScene.winMission();
+            }
         });
 
         return container;

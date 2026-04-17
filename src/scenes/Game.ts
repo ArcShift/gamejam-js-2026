@@ -14,6 +14,7 @@ export class Game extends Scene
     player: Player;
     units: Map<string, any> = new Map();
     scrap: Map<string, any> = new Map();
+    selector: Phaser.GameObjects.Graphics;
 
     constructor ()
     {
@@ -58,6 +59,43 @@ export class Game extends Scene
             const mapOffsetX = 50; // The x pos passed to new Map()
             const mapOffsetY = 50; // The y pos passed to new Map()
 
+            // Initialize Cell Selector
+            this.selector = this.add.graphics();
+            this.selector.lineStyle(2, 0x00ffff, 1);
+            
+            // Draw corner brackets for a tech look
+            const len = 12;
+            // Top Left
+            this.selector.moveTo(0, len);
+            this.selector.lineTo(0, 0);
+            this.selector.lineTo(len, 0);
+            // Top Right
+            this.selector.moveTo(cellSize - len, 0);
+            this.selector.lineTo(cellSize, 0);
+            this.selector.lineTo(cellSize, len);
+            // Bottom Right
+            this.selector.moveTo(cellSize, cellSize - len);
+            this.selector.lineTo(cellSize, cellSize);
+            this.selector.lineTo(cellSize - len, cellSize);
+            // Bottom Left
+            this.selector.moveTo(len, cellSize);
+            this.selector.lineTo(0, cellSize);
+            this.selector.lineTo(0, cellSize - len);
+            
+            this.selector.strokePath();
+            this.selector.setVisible(false);
+            this.selector.setDepth(10); // Above map and units
+
+            // Pulse effect for selector
+            this.tweens.add({
+                targets: this.selector,
+                alpha: 0.4,
+                duration: 800,
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut'
+            });
+
             // Handle Map Click
             this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
                 // If the pointer is over the sidebar area, ignore
@@ -76,7 +114,27 @@ export class Game extends Scene
                     const unit = this.units.get(key);
                     const scrap = this.scrap.get(key);
                     
+                    // Update selector position
+                    const sx = mapOffsetX + gx * totalCellSize;
+                    const sy = mapOffsetY + gy * totalCellSize;
+                    
+                    // If moving to a new position, add a little snap effect
+                    if (this.selector.x !== sx || this.selector.y !== sy) {
+                        this.selector.setPosition(sx, sy);
+                        this.selector.setVisible(true);
+                        this.selector.setScale(1.2);
+                        this.tweens.add({
+                            targets: this.selector,
+                            scaleX: 1,
+                            scaleY: 1,
+                            duration: 150,
+                            ease: 'Back.easeOut'
+                        });
+                    }
+
                     this.events.emit('cell-selected', { unit, scrap });
+                } else {
+                    this.selector.setVisible(false);
                 }
             });
             
@@ -178,6 +236,22 @@ export class Game extends Scene
 
         this.events.on('shutdown', () => {
             this.scene.stop('GameUI');
+        });
+    }
+
+    public winMission() {
+        const activeMission = this.mission || GManager.currentMission;
+        
+        this.cameras.main.fadeOut(1000, 0, 0, 0);
+        this.cameras.main.once('camerafadeoutcomplete', () => {
+            if (activeMission && activeMission.closing_naration) {
+                this.scene.start('Narration', {
+                    narrationKey: activeMission.closing_naration,
+                    nextScene: 'Campaign'
+                });
+            } else {
+                this.scene.start('Campaign');
+            }
         });
     }
 }

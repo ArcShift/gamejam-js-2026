@@ -9,6 +9,7 @@ export interface ICampaign {
 export const campaigns: ICampaign[] = [{
     title: "Begining",
     opening_naration: "intro",
+    closing_naration: "win-ending",
     map_width: 10,
     map_height: 10
 }, {
@@ -33,6 +34,7 @@ export const campaigns: ICampaign[] = [{
     map_height: 20
 }, {
     title: "Is this the end?",
+    closing_naration: "surrender-ending",
     map_width: 25,
     map_height: 25
 }];

@@ -5,7 +5,7 @@ interface Naration {
     character?: string;
     text: string[];
 }
-const narations: Naration[] = [{
+export const narations: Naration[] = [{
         key: "intro",
         title: "Who its all begin",
         text: [

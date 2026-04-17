@@ -5,6 +5,7 @@ import { MainMenu } from './scenes/MainMenu';
 import { Campaign } from './scenes/Campaign';
 import { Pause } from './subscene/Pause';
 import { GameUI } from './subscene/GameUI';
+import { Narration } from './scenes/Narration';
 import { AUTO, Game } from 'phaser';
 import { Preloader } from './scenes/Preloader';
 
@@ -24,6 +25,7 @@ const config: Phaser.Types.Core.GameConfig = {
         Preloader,
         MainMenu,
         Campaign,
+        Narration,
         MainGame,
         GameOver,
         Pause,

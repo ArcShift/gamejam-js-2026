@@ -137,7 +137,14 @@ export class Campaign extends Scene {
                     GManager.startMission(mission);
                     this.cameras.main.fadeOut(500, 0, 0, 0);
                     this.cameras.main.once('camerafadeoutcomplete', () => {
-                        this.scene.start('Game');
+                        if (mission.opening_naration && import.meta.env.VITE_ENV !== 'dev') {
+                            this.scene.start('Narration', {
+                                narrationKey: mission.opening_naration,
+                                nextScene: 'Game'
+                            });
+                        } else {
+                            this.scene.start('Game');
+                        }
                     });
                 });
 
