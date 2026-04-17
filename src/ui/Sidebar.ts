@@ -1,6 +1,9 @@
 import { Scene, GameObjects } from 'phaser';
 
 export class Sidebar extends GameObjects.Container {
+    private detailsContainer: GameObjects.Container;
+    private unitInfo: { name: GameObjects.Text, hp: GameObjects.Text, stats: GameObjects.Text, desc: GameObjects.Text };
+    private scrapInfo: { title: GameObjects.Text, value: GameObjects.Text };
     private bg: GameObjects.Rectangle;
 
     constructor(scene: Scene, x: number, y: number, width: number, height: number) {
@@ -21,12 +24,74 @@ export class Sidebar extends GameObjects.Container {
         }).setOrigin(0.5);
         this.add(title);
 
-        // Pause Button
-        const pauseBtn = this.createPauseButton(scene, width / 2, 80);
+        // Details Panel
+        this.createDetailsPanel(scene, width, height);
+
+        // Pause Button (moved to bottom)
+        const pauseBtn = this.createPauseButton(scene, width / 2, height - 40);
         this.add(pauseBtn);
 
         // Add the container to the scene
         scene.add.existing(this);
+    }
+
+    private createDetailsPanel(scene: Scene, width: number, height: number) {
+        this.detailsContainer = scene.add.container(20, 80);
+        this.add(this.detailsContainer);
+
+        // Unit Section
+        const unitTitle = scene.add.text(0, 0, 'UNIT DATA', {
+            fontSize: '14px',
+            fontFamily: 'Orbitron',
+            color: '#00ffff'
+        });
+        
+        this.unitInfo = {
+            name: scene.add.text(0, 25, 'No Unit Selected', { fontSize: '18px', color: '#ffffff' }),
+            hp: scene.add.text(0, 50, '', { fontSize: '14px', color: '#ff5555' }),
+            stats: scene.add.text(0, 70, '', { fontSize: '13px', color: '#aaaaaa' }),
+            desc: scene.add.text(0, 95, '', { fontSize: '12px', color: '#888888', wordWrap: { width: width - 40 } })
+        };
+
+        // Scrap Section
+        const scrapY = 220;
+        const scrapTitle = scene.add.text(0, scrapY, 'RESOURCES', {
+            fontSize: '14px',
+            fontFamily: 'Orbitron',
+            color: '#ffaa00'
+        });
+
+        this.scrapInfo = {
+            title: scene.add.text(0, scrapY + 25, '', { fontSize: '16px', color: '#ffffff' }),
+            value: scene.add.text(0, scrapY + 50, '', { fontSize: '14px', color: '#ffaa00' })
+        };
+
+        this.detailsContainer.add([
+            unitTitle, this.unitInfo.name, this.unitInfo.hp, this.unitInfo.stats, this.unitInfo.desc,
+            scrapTitle, this.scrapInfo.title, this.scrapInfo.value
+        ]);
+    }
+
+    public updateDetails(unit: any | null, scrap: any | null) {
+        if (unit) {
+            this.unitInfo.name.setText(unit.name.toUpperCase());
+            this.unitInfo.hp.setText(`HP: ${unit.hp} / ${unit.maxHp}`);
+            this.unitInfo.stats.setText(`ATK: ${unit.attack}  DEF: ${unit.defense}  SPD: ${unit.speed}`);
+            this.unitInfo.desc.setText(unit.description);
+        } else {
+            this.unitInfo.name.setText('NONE');
+            this.unitInfo.hp.setText('');
+            this.unitInfo.stats.setText('');
+            this.unitInfo.desc.setText('Select a grid to scan for units.');
+        }
+
+        if (scrap) {
+            this.scrapInfo.title.setText('SCRAP METAL');
+            this.scrapInfo.value.setText(`VALUE: ${scrap.value} units`);
+        } else {
+            this.scrapInfo.title.setText('NONE');
+            this.scrapInfo.value.setText('');
+        }
     }
 
     private createPauseButton(scene: Scene, x: number, y: number): GameObjects.Container {
@@ -54,7 +119,6 @@ export class Sidebar extends GameObjects.Container {
         });
 
         bg.on('pointerdown', () => {
-            // Note: Use scene.scene to access the SceneManager
             scene.scene.pause('Game');
             scene.scene.pause('GameUI');
             scene.scene.launch('Pause');

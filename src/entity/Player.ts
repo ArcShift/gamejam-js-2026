@@ -2,10 +2,15 @@ import { Scene } from 'phaser';
 
 export class Player {
     container: Phaser.GameObjects.Container;
-    maxHP: number = 100;
+    name: string = "CORE-01";
+    description: string = "Tecnomancer.";
+    maxHp: number = 100;
+    hp: number = this.maxHp;
     maxMP: number = 100;
-    HP: number = this.maxHP;
     MP: number = this.maxMP;
+    attack: number = 25;
+    defense: number = 15;
+    speed: number = 12;
 
     constructor(scene: Scene) {
         this.container = scene.add.container(0, 0);
@@ -66,4 +71,4 @@ export class Player {
     
     get x() { return this.container.x; }
     get y() { return this.container.y; }
-}
+}
