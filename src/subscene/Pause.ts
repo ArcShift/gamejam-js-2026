@@ -43,6 +43,7 @@ export class Pause extends Scene {
         btnBg.on('pointerdown', () => {
             this.scene.stop();
             this.scene.resume('Game');
+            this.scene.resume('GameUI');
         });
 
         // Quit Button (Back to Menu)

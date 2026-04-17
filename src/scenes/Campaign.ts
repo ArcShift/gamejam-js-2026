@@ -83,7 +83,7 @@ export class Campaign extends Scene {
             const { x, y } = nodePositions[index];
 
             // Mock unlocked logic: assume first 2 are unlocked
-            const isUnlocked = index < 2; 
+            const isUnlocked = index < 7; 
 
             // Node container
             const nodeContainer = this.add.container(x, y);

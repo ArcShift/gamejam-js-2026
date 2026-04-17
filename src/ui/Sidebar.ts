@@ -56,6 +56,7 @@ export class Sidebar extends GameObjects.Container {
         bg.on('pointerdown', () => {
             // Note: Use scene.scene to access the SceneManager
             scene.scene.pause('Game');
+            scene.scene.pause('GameUI');
             scene.scene.launch('Pause');
         });
 

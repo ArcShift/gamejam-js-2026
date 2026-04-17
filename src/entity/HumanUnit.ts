@@ -1,3 +1,4 @@
+import { Scene } from 'phaser';
 import { IUnit, Unit, UnitType } from "./Unit";
 
 export enum HumanFaction {
@@ -6,19 +7,85 @@ export enum HumanFaction {
     Good
 }
 
-interface IHumanUnit extends IUnit {
+export interface IHumanUnit extends IUnit {
     faction: HumanFaction;
 }
 
-class HumanUnit extends Unit implements IHumanUnit {
+export class HumanUnit extends Unit implements IHumanUnit {
     faction: HumanFaction;
-    constructor(name: string, description: string, maxHp: number, attack: number, defense: number, speed: number, faction: HumanFaction) {
-        super(name, description, maxHp, attack, defense, speed, UnitType.Human);
-        this.faction = faction;
+    container: Phaser.GameObjects.Container;
+
+    constructor(scene: Scene, config: IHumanUnit) {
+        super(config.name, config.description, config.maxHp, config.attack, config.defense, config.speed, UnitType.Human);
+        this.faction = config.faction;
+        
+        this.container = scene.add.container(0, 0);
+        
+        const baseColor = this.getColorFor(config.name);
+        
+        // Simple human geometry
+        // Shadow for depth
+        const shadow = scene.add.ellipse(0, 15, 24, 12, 0x000000, 0.3);
+        
+        // Head
+        const head = scene.add.circle(0, -10, 8, 0xffdbac);
+        head.setStrokeStyle(1, 0x000000, 0.5);
+        
+        // Body (tactical vest look)
+        const body = scene.add.rectangle(0, 5, 20, 22, baseColor);
+        body.setStrokeStyle(1, 0x000000);
+
+        // Arms
+        const lArm = scene.add.rectangle(-12, 2, 6, 16, baseColor);
+        const rArm = scene.add.rectangle(12, 2, 6, 16, baseColor);
+        
+        this.container.add([shadow, lArm, rArm, body, head]);
+
+        // Detail based on type
+        if (config.name === "Tyrant") {
+            // Golden crown
+            const crown = scene.add.triangle(0, -22, -7, 0, 7, 0, 0, -10, 0xffd700);
+            crown.setStrokeStyle(1, 0x000000);
+            this.container.add(crown);
+            
+            // Glowing aura
+            const aura = scene.add.circle(0, 0, 25, 0x9c27b0, 0.1);
+            this.container.addAt(aura, 0);
+        } else if (config.name === "Mercenary") {
+            // Blue bandana
+            const bandana = scene.add.rectangle(0, -12, 18, 4, 0x3f51b5);
+            this.container.add(bandana);
+        }
+
+        // Pulse animation for importance
+        scene.tweens.add({
+            targets: this.container,
+            y: "-=2",
+            duration: 1500 + Math.random() * 500,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+        });
+
+        this.container.setDepth(10);
+        scene.add.existing(this.container);
+    }
+    
+    private getColorFor(name: string): number {
+        switch(name) {
+            case "Thug": return 0x795548; // Brown
+            case "Mercenary": return 0x455a64; // Steel Blue/Grey
+            case "Tyrant": return 0x212121; // Dark/Black
+            default: return 0x607d8b;
+        }
+    }
+
+    setPosition(x: number, y: number) {
+        this.container.setPosition(x, y);
     }
 }
 
-const humans: IHumanUnit[] = [{
+export const humans: IHumanUnit[] = [{
         name: "Thug",
         description: "Street thug. usually use melee attack",
         maxHp: 100,
@@ -43,6 +110,5 @@ const humans: IHumanUnit[] = [{
         speed: 10,
         faction: HumanFaction.Evil
     }
-    //neutral & good implement later
 ];
 
