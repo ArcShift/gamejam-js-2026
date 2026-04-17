@@ -437,8 +437,17 @@ export class Game extends Scene
                 
                 // Only allow if it's the player's turn (IDLE state)
                 if (scrap && this.turnManager.state === SystemState.IDLE) {
-                    // Check if player has enough AP
-                    if (this.player.ap < scrap.value) {
+                    // Calculate how much can be collected
+                    const spaceLeft = Player.MAX_SCRAP - this.player.scrap;
+                    const amountToCollect = Math.min(scrap.value, spaceLeft);
+
+                    if (amountToCollect <= 0) {
+                        this.showNotEnoughSpace();
+                        return;
+                    }
+
+                    // Check if player has enough AP for the amount being collected
+                    if (this.player.ap < amountToCollect) {
                         this.showNotEnoughAP();
                         return;
                     }
@@ -447,22 +456,30 @@ export class Game extends Scene
                     this.turnManager.state = SystemState.ANIMATING;
 
                     // Consume AP and collect scrap
-                    this.player.ap -= scrap.value;
-                    this.player.scrap = Math.min(Player.MAX_SCRAP, this.player.scrap + scrap.value);
+                    this.player.ap -= amountToCollect;
+                    this.player.scrap += amountToCollect;
                     
-                    // Remove scrap from map
-                    this.scrap.delete(key);
+                    // Update or remove scrap from map
+                    scrap.value -= amountToCollect;
+                    const fullyCollected = scrap.value <= 0;
+                    
+                    if (fullyCollected) {
+                        this.scrap.delete(key);
+                    }
                     
                     // Visual effect for collection
                     this.tweens.add({
                         targets: scrap.container,
-                        y: scrap.container.y - 50,
-                        alpha: 0,
-                        scale: 1.5,
+                        y: fullyCollected ? scrap.container.y - 50 : scrap.container.y - 20,
+                        alpha: fullyCollected ? 0 : 0.7,
+                        scale: fullyCollected ? 1.5 : 0.8,
                         duration: 500,
                         ease: 'Power2',
+                        yoyo: !fullyCollected,
                         onComplete: () => {
-                            scrap.destroy();
+                            if (fullyCollected) {
+                                scrap.destroy();
+                            }
                             
                             // Formally end player action/turn
                             this.turnManager.endPlayerAction();
@@ -476,8 +493,8 @@ export class Game extends Scene
                         activeUnitName: this.player.name
                     });
                     
-                    // Update selection info (now with no scrap)
-                    this.events.emit('cell-selected', { unit: this.player, scrap: null });
+                    // Update selection info
+                    this.events.emit('cell-selected', { unit: this.player, scrap: fullyCollected ? null : scrap });
                 }
             });
 
@@ -502,6 +519,29 @@ export class Game extends Scene
             fontSize: '14px',
             fontFamily: 'Orbitron, Arial',
             color: '#ff4444',
+            stroke: '#000000',
+            strokeThickness: 3,
+        }).setOrigin(0.5).setDepth(20);
+
+        this.tweens.add({
+            targets: text,
+            y: ty - 30,
+            alpha: 0,
+            duration: 1000,
+            ease: 'Power2',
+            onComplete: () => text.destroy()
+        });
+    }
+
+    /** Show a brief "STORAGE FULL" flash near the player */
+    private showNotEnoughSpace() {
+        const tx = this.player.container.x;
+        const ty = this.player.container.y - 40;
+
+        const text = this.add.text(tx, ty, 'STORAGE FULL!', {
+            fontSize: '14px',
+            fontFamily: 'Orbitron, Arial',
+            color: '#ffaa00',
             stroke: '#000000',
             strokeThickness: 3,
         }).setOrigin(0.5).setDepth(20);
