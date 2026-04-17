@@ -3,15 +3,8 @@ import { Unit, UnitType } from './Unit';
 
 export class Player extends Unit {
     container: Phaser.GameObjects.Container;
-    name: string = "CORE-01";
-    description: string = "Tecnomancer.";
-    maxHp: number = 100;
-    hp: number = this.maxHp;
-    maxMP: number = 100;
-    MP: number = this.maxMP;
-    attack: number = 25;
-    defense: number = 15;
-    speed: number = 12;
+    static readonly MAX_SCRAP: number = 100;
+    scrap: number = 0;
 
     constructor(scene: Scene) {
         super("CORE-01", "Tecnomancer.", 100, 25, 15, 12, UnitType.Machine);

@@ -15,6 +15,9 @@ export class Game extends Scene
     units: Map<string, any> = new Map();
     scrap: Map<string, any> = new Map();
     selector: Phaser.GameObjects.Graphics;
+    arrow: Phaser.GameObjects.Graphics;
+    selectedGx: number = -1;
+    selectedGy: number = -1;
 
     constructor ()
     {
@@ -86,9 +89,14 @@ export class Game extends Scene
             this.selector.setVisible(false);
             this.selector.setDepth(10); // Above map and units
 
+            // Initialize Arrow Graphic
+            this.arrow = this.add.graphics();
+            this.arrow.setDepth(11);
+            this.arrow.setVisible(false);
+
             // Pulse effect for selector
             this.tweens.add({
-                targets: this.selector,
+                targets: [this.selector, this.arrow],
                 alpha: 0.4,
                 duration: 800,
                 yoyo: true,
@@ -110,6 +118,45 @@ export class Game extends Scene
 
                 // Check bounds
                 if (gx >= 0 && gx < activeMission.map_width && gy >= 0 && gy < activeMission.map_height) {
+                    const isSameCell = this.selectedGx === gx && this.selectedGy === gy;
+                    const isAdjacent = Math.abs(gx - this.player.gx) + Math.abs(gy - this.player.gy) === 1;
+
+                    if (isSameCell && isAdjacent) {
+                        // MOVE PLAYER
+                        const targetKey = `${gx},${gy}`;
+                        if (!this.units.has(targetKey)) {
+                            // Update map tracking
+                            this.units.delete(`${this.player.gx},${this.player.gy}`);
+                            this.player.gx = gx;
+                            this.player.gy = gy;
+                            this.units.set(targetKey, this.player);
+
+                            // Animate movement
+                            const tx = mapOffsetX + gx * totalCellSize + cellSize / 2;
+                            const ty = mapOffsetY + gy * totalCellSize + cellSize / 2;
+
+                            this.tweens.add({
+                                targets: this.player.container,
+                                x: tx,
+                                y: ty,
+                                duration: 200,
+                                ease: 'Power2',
+                                onComplete: () => {
+                                    // Reset selection after move
+                                    this.selectedGx = -1;
+                                    this.selectedGy = -1;
+                                    this.selector.setVisible(false);
+                                    this.arrow.setVisible(false);
+                                }
+                            });
+                            return;
+                        }
+                    }
+
+                    // UPDATE SELECTION
+                    this.selectedGx = gx;
+                    this.selectedGy = gy;
+
                     const key = `${gx},${gy}`;
                     const unit = this.units.get(key);
                     const scrap = this.scrap.get(key);
@@ -119,22 +166,52 @@ export class Game extends Scene
                     const sy = mapOffsetY + gy * totalCellSize;
                     
                     // If moving to a new position, add a little snap effect
-                    if (this.selector.x !== sx || this.selector.y !== sy) {
-                        this.selector.setPosition(sx, sy);
-                        this.selector.setVisible(true);
-                        this.selector.setScale(1.2);
-                        this.tweens.add({
-                            targets: this.selector,
-                            scaleX: 1,
-                            scaleY: 1,
-                            duration: 150,
-                            ease: 'Back.easeOut'
-                        });
+                    this.selector.setPosition(sx, sy);
+                    this.selector.setVisible(true);
+                    this.selector.setScale(1.2);
+                    this.tweens.add({
+                        targets: this.selector,
+                        scaleX: 1,
+                        scaleY: 1,
+                        duration: 150,
+                        ease: 'Back.easeOut'
+                    });
+
+                    // Update Arrow
+                    this.arrow.clear();
+                    if (isAdjacent && !unit) {
+                        this.arrow.setVisible(true);
+                        this.arrow.lineStyle(3, 0xffff00, 1);
+                        this.arrow.fillStyle(0xffff00, 1);
+                        
+                        const centerX = sx + cellSize / 2;
+                        const centerY = sy + cellSize / 2;
+                        
+                        // Direction from player to cell
+                        const dx = gx - this.player.gx;
+                        const dy = gy - this.player.gy;
+                        
+                        // Draw arrow pointing to center of cell
+                        const arrowSize = 10;
+                        if (dx > 0) { // Right
+                            this.drawArrow(centerX - 15, centerY, centerX + 5, centerY);
+                        } else if (dx < 0) { // Left
+                            this.drawArrow(centerX + 15, centerY, centerX - 5, centerY);
+                        } else if (dy > 0) { // Down
+                            this.drawArrow(centerX, centerY - 15, centerX, centerY + 5);
+                        } else if (dy < 0) { // Up
+                            this.drawArrow(centerX, centerY + 15, centerX, centerY - 5);
+                        }
+                    } else {
+                        this.arrow.setVisible(false);
                     }
 
                     this.events.emit('cell-selected', { unit, scrap });
                 } else {
                     this.selector.setVisible(false);
+                    this.arrow.setVisible(false);
+                    this.selectedGx = -1;
+                    this.selectedGy = -1;
                 }
             });
             
@@ -156,6 +233,8 @@ export class Game extends Scene
             const py = mapOffsetY + pgy * totalCellSize + cellSize / 2;
             
             this.player.setPosition(px, py);
+            this.player.gx = pgx;
+            this.player.gy = pgy;
             this.units.set(`${pgx},${pgy}`, this.player);
 
             // Create cell pools
@@ -237,6 +316,15 @@ export class Game extends Scene
         this.events.on('shutdown', () => {
             this.scene.stop('GameUI');
         });
+    }
+
+    private drawArrow(fromX: number, fromY: number, toX: number, toY: number) {
+        this.arrow.lineBetween(fromX, fromY, toX, toY);
+        const angle = Math.atan2(toY - fromY, toX - fromX);
+        const headSize = 10;
+        
+        this.arrow.lineBetween(toX, toY, toX - headSize * Math.cos(angle - Math.PI / 6), toY - headSize * Math.sin(angle - Math.PI / 6));
+        this.arrow.lineBetween(toX, toY, toX - headSize * Math.cos(angle + Math.PI / 6), toY - headSize * Math.sin(angle + Math.PI / 6));
     }
 
     public winMission() {

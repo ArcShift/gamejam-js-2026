@@ -19,6 +19,8 @@ export class Unit implements IUnit {
     defense: number;
     speed: number;
     type: UnitType;
+    gx: number = 0;
+    gy: number = 0;
     
     hp: number;
     ap: number;
