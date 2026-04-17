@@ -5,6 +5,8 @@ import { GManager } from '../system/GameManager';
 import { Player } from '../entity/Player';
 import { Scrap } from '../entity/Scrap';
 import { HumanUnit, humans } from '../entity/HumanUnit';
+import { TurnManager, SystemState } from '../system/TurnManager';
+import { Unit } from '../entity/Unit';
 
 export class Game extends Scene
 {
@@ -18,6 +20,15 @@ export class Game extends Scene
     arrow: Phaser.GameObjects.Graphics;
     selectedGx: number = -1;
     selectedGy: number = -1;
+
+    // Turn system
+    turnManager: TurnManager;
+
+    // Grid constants
+    private cellSize = 64;
+    private totalCellSize = 68; // cellSize + gap
+    private mapOffsetX = 50;
+    private mapOffsetY = 50;
 
     constructor ()
     {
@@ -38,7 +49,6 @@ export class Game extends Scene
         this.camera.setBackgroundColor(0x0a0a0a);
 
         const width = this.scale.width;
-        const height = this.scale.height;
         const sidebarWidth = 250;
 
         // Use GManager if mission data is not in init data (happens on restarts/re-entries)
@@ -54,13 +64,6 @@ export class Game extends Scene
             
             // Basic camera bounds based on map size
             this.camera.setBounds(0, 0, this.gameMap.width + 100 + sidebarWidth, this.gameMap.height + 100);
-            
-            // Grid constants from Map.ts
-            const cellSize = 64;
-            const gap = 4;
-            const totalCellSize = cellSize + gap;
-            const mapOffsetX = 50; // The x pos passed to new Map()
-            const mapOffsetY = 50; // The y pos passed to new Map()
 
             // Initialize Cell Selector
             this.selector = this.add.graphics();
@@ -73,17 +76,17 @@ export class Game extends Scene
             this.selector.lineTo(0, 0);
             this.selector.lineTo(len, 0);
             // Top Right
-            this.selector.moveTo(cellSize - len, 0);
-            this.selector.lineTo(cellSize, 0);
-            this.selector.lineTo(cellSize, len);
+            this.selector.moveTo(this.cellSize - len, 0);
+            this.selector.lineTo(this.cellSize, 0);
+            this.selector.lineTo(this.cellSize, len);
             // Bottom Right
-            this.selector.moveTo(cellSize, cellSize - len);
-            this.selector.lineTo(cellSize, cellSize);
-            this.selector.lineTo(cellSize - len, cellSize);
+            this.selector.moveTo(this.cellSize, this.cellSize - len);
+            this.selector.lineTo(this.cellSize, this.cellSize);
+            this.selector.lineTo(this.cellSize - len, this.cellSize);
             // Bottom Left
-            this.selector.moveTo(len, cellSize);
-            this.selector.lineTo(0, cellSize);
-            this.selector.lineTo(0, cellSize - len);
+            this.selector.moveTo(len, this.cellSize);
+            this.selector.lineTo(0, this.cellSize);
+            this.selector.lineTo(0, this.cellSize - len);
             
             this.selector.strokePath();
             this.selector.setVisible(false);
@@ -109,12 +112,15 @@ export class Game extends Scene
                 // If the pointer is over the sidebar area, ignore
                 if (pointer.x > width - sidebarWidth) return;
 
+                // Block input if not player's turn or system is busy
+                if (this.turnManager && this.turnManager.state !== SystemState.IDLE) return;
+
                 // Convert world position to grid coordinates
                 const worldX = pointer.worldX;
                 const worldY = pointer.worldY;
 
-                const gx = Math.floor((worldX - mapOffsetX) / totalCellSize);
-                const gy = Math.floor((worldY - mapOffsetY) / totalCellSize);
+                const gx = Math.floor((worldX - this.mapOffsetX) / this.totalCellSize);
+                const gy = Math.floor((worldY - this.mapOffsetY) / this.totalCellSize);
 
                 // Check bounds
                 if (gx >= 0 && gx < activeMission.map_width && gy >= 0 && gy < activeMission.map_height) {
@@ -125,6 +131,16 @@ export class Game extends Scene
                         // MOVE PLAYER
                         const targetKey = `${gx},${gy}`;
                         if (!this.units.has(targetKey)) {
+                            // Check if player has enough AP
+                            if (!this.player.canMove()) {
+                                this.showNotEnoughAP();
+                                return;
+                            }
+
+                            // Consume AP via turn manager
+                            const moved = this.turnManager.playerMove();
+                            if (!moved) return;
+
                             // Update map tracking
                             this.units.delete(`${this.player.gx},${this.player.gy}`);
                             this.player.gx = gx;
@@ -132,8 +148,8 @@ export class Game extends Scene
                             this.units.set(targetKey, this.player);
 
                             // Animate movement
-                            const tx = mapOffsetX + gx * totalCellSize + cellSize / 2;
-                            const ty = mapOffsetY + gy * totalCellSize + cellSize / 2;
+                            const tx = this.mapOffsetX + gx * this.totalCellSize + this.cellSize / 2;
+                            const ty = this.mapOffsetY + gy * this.totalCellSize + this.cellSize / 2;
 
                             this.tweens.add({
                                 targets: this.player.container,
@@ -147,6 +163,16 @@ export class Game extends Scene
                                     this.selectedGy = -1;
                                     this.selector.setVisible(false);
                                     this.arrow.setVisible(false);
+
+                                    // Emit AP update for sidebar
+                                    this.events.emit('ap-updated', {
+                                        ap: this.player.ap,
+                                        turn: this.turnManager.turnCount,
+                                        activeUnitName: this.turnManager.currentUnit?.name || 'UNKNOWN'
+                                    });
+
+                                    // Tell turn manager the action is finished
+                                    this.turnManager.endPlayerAction();
                                 }
                             });
                             return;
@@ -162,8 +188,8 @@ export class Game extends Scene
                     const scrap = this.scrap.get(key);
                     
                     // Update selector position
-                    const sx = mapOffsetX + gx * totalCellSize;
-                    const sy = mapOffsetY + gy * totalCellSize;
+                    const sx = this.mapOffsetX + gx * this.totalCellSize;
+                    const sy = this.mapOffsetY + gy * this.totalCellSize;
                     
                     // If moving to a new position, add a little snap effect
                     this.selector.setPosition(sx, sy);
@@ -177,22 +203,21 @@ export class Game extends Scene
                         ease: 'Back.easeOut'
                     });
 
-                    // Update Arrow
+                    // Update Arrow — only show if player can afford to move
                     this.arrow.clear();
-                    if (isAdjacent && !unit) {
+                    if (isAdjacent && !unit && this.player.canMove()) {
                         this.arrow.setVisible(true);
                         this.arrow.lineStyle(3, 0xffff00, 1);
                         this.arrow.fillStyle(0xffff00, 1);
                         
-                        const centerX = sx + cellSize / 2;
-                        const centerY = sy + cellSize / 2;
+                        const centerX = sx + this.cellSize / 2;
+                        const centerY = sy + this.cellSize / 2;
                         
                         // Direction from player to cell
                         const dx = gx - this.player.gx;
                         const dy = gy - this.player.gy;
                         
                         // Draw arrow pointing to center of cell
-                        const arrowSize = 10;
                         if (dx > 0) { // Right
                             this.drawArrow(centerX - 15, centerY, centerX + 5, centerY);
                         } else if (dx < 0) { // Left
@@ -215,9 +240,7 @@ export class Game extends Scene
                 }
             });
             
-            // Make map draggable for large maps (only if right click or shift click?)
-            // Actually, let's just make it drag if not clicking a unit/cell?
-            // For now keep simple: drag if pointer is down and moving
+            // Make map draggable for large maps
             this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
                 if (!pointer.isDown || pointer.x > width - sidebarWidth) return;
                 this.camera.scrollX -= (pointer.x - pointer.prevPosition.x) / this.camera.zoom;
@@ -229,12 +252,14 @@ export class Game extends Scene
             const pgx = Math.floor(Math.random() * activeMission.map_width);
             const pgy = Math.floor(Math.random() * activeMission.map_height);
             
-            const px = mapOffsetX + pgx * totalCellSize + cellSize / 2;
-            const py = mapOffsetY + pgy * totalCellSize + cellSize / 2;
+            const px = this.mapOffsetX + pgx * this.totalCellSize + this.cellSize / 2;
+            const py = this.mapOffsetY + pgy * this.totalCellSize + this.cellSize / 2;
             
             this.player.setPosition(px, py);
             this.player.gx = pgx;
             this.player.gy = pgy;
+            // Give player starting AP so they can move immediately
+            this.player.ap = 50;
             this.units.set(`${pgx},${pgy}`, this.player);
 
             // Create cell pools
@@ -265,8 +290,8 @@ export class Game extends Scene
                 const scrapValue = Math.floor(Math.random() * 100) + 1;
                 const scrapObj = new Scrap(this, scrapValue);
                 
-                const sx = mapOffsetX + cell.gx * totalCellSize + cellSize / 2;
-                const sy = mapOffsetY + cell.gy * totalCellSize + cellSize / 2;
+                const sx = this.mapOffsetX + cell.gx * this.totalCellSize + this.cellSize / 2;
+                const sy = this.mapOffsetY + cell.gy * this.totalCellSize + this.cellSize / 2;
                 
                 scrapObj.setPosition(sx, sy);
                 this.scrap.set(`${cell.gx},${cell.gy}`, scrapObj);
@@ -296,6 +321,9 @@ export class Game extends Scene
                 }
             });
 
+            // Collect all units for the turn manager
+            const allGameUnits: Unit[] = [this.player];
+
             // Place units in random available cells (cannot overlap with player or each other)
             for (const unitData of spawnQueue) {
                 if (availableUnitCells.length === 0) break;
@@ -303,11 +331,77 @@ export class Game extends Scene
                 const cell = availableUnitCells.splice(randomIndex, 1)[0];
                 
                 const unit = new HumanUnit(this, unitData);
-                const hx = mapOffsetX + cell.gx * totalCellSize + cellSize / 2;
-                const hy = mapOffsetY + cell.gy * totalCellSize + cellSize / 2;
+                const hx = this.mapOffsetX + cell.gx * this.totalCellSize + this.cellSize / 2;
+                const hy = this.mapOffsetY + cell.gy * this.totalCellSize + this.cellSize / 2;
                 unit.setPosition(hx, hy);
+                unit.setGridPosition(cell.gx, cell.gy);
                 this.units.set(`${cell.gx},${cell.gy}`, unit);
+
+                allGameUnits.push(unit);
             }
+
+            // Initialize Turn Manager
+            this.turnManager = new TurnManager(this.player, this.units);
+            this.turnManager.registerUnits(allGameUnits);
+
+            // Handle enemy movement animation
+            this.turnManager.onEnemyMove = (action, onComplete) => {
+                const targetX = this.mapOffsetX + action.toGx * this.totalCellSize + this.cellSize / 2;
+                const targetY = this.mapOffsetY + action.toGy * this.totalCellSize + this.cellSize / 2;
+                const humanUnit = action.unit as HumanUnit;
+
+                // Flash the enemy red briefly to indicate it's acting
+                const flashGraphic = this.add.circle(
+                    this.mapOffsetX + action.fromGx * this.totalCellSize + this.cellSize / 2,
+                    this.mapOffsetY + action.fromGy * this.totalCellSize + this.cellSize / 2,
+                    20, 0xff0000, 0.3
+                );
+                flashGraphic.setDepth(9);
+
+                this.tweens.add({
+                    targets: flashGraphic,
+                    alpha: 0,
+                    duration: 300,
+                    onComplete: () => flashGraphic.destroy()
+                });
+
+                this.tweens.add({
+                    targets: humanUnit.container,
+                    x: targetX,
+                    y: targetY,
+                    duration: 250,
+                    ease: 'Power2',
+                    onComplete: () => {
+                        onComplete();
+                    }
+                });
+            };
+
+            this.turnManager.onPlayerTurnStart = () => {
+                this.events.emit('ap-updated', {
+                    ap: this.player.ap,
+                    turn: this.turnManager.turnCount,
+                    activeUnitName: this.player.name
+                });
+            };
+
+            this.turnManager.onTurnTick = () => {
+                this.events.emit('ap-updated', {
+                    ap: this.player.ap,
+                    turn: this.turnManager.turnCount,
+                    activeUnitName: this.turnManager.currentUnit?.name || 'TICKING...'
+                });
+            };
+
+            // Emit initial AP state
+            this.events.emit('ap-updated', {
+                ap: this.player.ap,
+                turn: 0,
+                activeUnitName: 'INITIALIZING'
+            });
+
+            // START THE LOOP
+            this.turnManager.start();
         }
         
         // Launch UI subscene
@@ -315,6 +409,29 @@ export class Game extends Scene
 
         this.events.on('shutdown', () => {
             this.scene.stop('GameUI');
+        });
+    }
+
+    /** Show a brief "NOT ENOUGH AP" flash near the player */
+    private showNotEnoughAP() {
+        const tx = this.player.container.x;
+        const ty = this.player.container.y - 40;
+
+        const text = this.add.text(tx, ty, 'NOT ENOUGH AP!', {
+            fontSize: '14px',
+            fontFamily: 'Orbitron, Arial',
+            color: '#ff4444',
+            stroke: '#000000',
+            strokeThickness: 3,
+        }).setOrigin(0.5).setDepth(20);
+
+        this.tweens.add({
+            targets: text,
+            y: ty - 30,
+            alpha: 0,
+            duration: 1000,
+            ease: 'Power2',
+            onComplete: () => text.destroy()
         });
     }
 

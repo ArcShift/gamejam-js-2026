@@ -6,6 +6,15 @@ export class Sidebar extends GameObjects.Container {
     private scrapInfo: { title: GameObjects.Text, value: GameObjects.Text };
     private bg: GameObjects.Rectangle;
 
+    // Turn system UI
+    private turnText: GameObjects.Text;
+    private phaseText: GameObjects.Text;
+    private apLabelText: GameObjects.Text;
+    private apValueText: GameObjects.Text;
+    private apBarBg: GameObjects.Rectangle;
+    private apBarFill: GameObjects.Rectangle;
+    private apBarWidth: number;
+
     constructor(scene: Scene, x: number, y: number, width: number, height: number) {
         super(scene, x, y);
         
@@ -24,6 +33,9 @@ export class Sidebar extends GameObjects.Container {
         }).setOrigin(0.5);
         this.add(title);
 
+        // Turn & AP Panel (below header, above details)
+        this.createTurnPanel(scene, width);
+
         // Details Panel
         this.createDetailsPanel(scene, width, height);
 
@@ -39,8 +51,99 @@ export class Sidebar extends GameObjects.Container {
         scene.add.existing(this);
     }
 
-    private createDetailsPanel(scene: Scene, width: number, height: number) {
-        this.detailsContainer = scene.add.container(20, 80);
+    private createTurnPanel(scene: Scene, width: number) {
+        const panelY = 55;
+        const padX = 15;
+
+        // Separator line
+        const sep = scene.add.rectangle(padX, panelY, width - padX * 2, 1, 0x333333);
+        sep.setOrigin(0, 0);
+        this.add(sep);
+
+        // Turn counter
+        this.turnText = scene.add.text(padX, panelY + 8, 'TURN: 0', {
+            fontSize: '13px',
+            fontFamily: 'Orbitron, monospace',
+            color: '#888888'
+        });
+        this.add(this.turnText);
+
+        // Phase indicator
+        this.phaseText = scene.add.text(width - padX, panelY + 8, 'YOUR TURN', {
+            fontSize: '13px',
+            fontFamily: 'Orbitron, monospace',
+            color: '#00ff88'
+        }).setOrigin(1, 0);
+        this.add(this.phaseText);
+
+        // AP Label
+        this.apLabelText = scene.add.text(padX, panelY + 30, 'ACTION POINTS', {
+            fontSize: '11px',
+            fontFamily: 'Orbitron, monospace',
+            color: '#00ccff'
+        });
+        this.add(this.apLabelText);
+
+        // AP Value text
+        this.apValueText = scene.add.text(width - padX, panelY + 30, '0 / 100', {
+            fontSize: '11px',
+            fontFamily: 'monospace',
+            color: '#ffffff'
+        }).setOrigin(1, 0);
+        this.add(this.apValueText);
+
+        // AP Bar background
+        this.apBarWidth = width - padX * 2;
+        this.apBarBg = scene.add.rectangle(padX, panelY + 48, this.apBarWidth, 12, 0x222222);
+        this.apBarBg.setOrigin(0, 0);
+        this.apBarBg.setStrokeStyle(1, 0x444444);
+        this.add(this.apBarBg);
+
+        // AP Bar fill
+        this.apBarFill = scene.add.rectangle(padX + 1, panelY + 49, 0, 10, 0x00ccff);
+        this.apBarFill.setOrigin(0, 0);
+        this.add(this.apBarFill);
+
+        // Bottom separator
+        const sep2 = scene.add.rectangle(padX, panelY + 68, width - padX * 2, 1, 0x333333);
+        sep2.setOrigin(0, 0);
+        this.add(sep2);
+    }
+
+    public updateAP(ap: number, turn: number, activeUnitName: string) {
+        this.turnText.setText(`TURN: ${turn}`);
+        this.apValueText.setText(`${ap} / 100`);
+
+        // Update active unit text
+        this.phaseText.setText(activeUnitName.toUpperCase());
+        if (activeUnitName === 'CORE-01') {
+            this.phaseText.setColor('#00ff88'); // Player color
+        } else {
+            this.phaseText.setColor('#ff4444'); // Enemy color
+        }
+
+        // Animate AP bar fill (cap visually at 100% but keep data)
+        const progress = Math.min(1, ap / 100);
+        const fillWidth = Math.max(0, progress * (this.apBarWidth - 2));
+        this.scene.tweens.add({
+            targets: this.apBarFill,
+            displayWidth: fillWidth,
+            duration: 200,
+            ease: 'Power2'
+        });
+
+        // Color the bar based on AP level
+        if (ap >= 50) {
+            this.apBarFill.setFillStyle(0x00ccff); // Cyan - plenty of AP
+        } else if (ap >= 25) {
+            this.apBarFill.setFillStyle(0xffaa00); // Orange - one move left
+        } else {
+            this.apBarFill.setFillStyle(0xff4444); // Red - not enough to move
+        }
+    }
+
+    private createDetailsPanel(scene: Scene, width: number, _height?: number) {
+        this.detailsContainer = scene.add.container(20, 140);
         this.add(this.detailsContainer);
 
         // Unit Section
@@ -58,7 +161,7 @@ export class Sidebar extends GameObjects.Container {
         };
 
         // Scrap Section
-        const scrapY = 220;
+        const scrapY = 180;
         const scrapTitle = scene.add.text(0, scrapY, 'RESOURCES', {
             fontSize: '14px',
             fontFamily: 'Orbitron',

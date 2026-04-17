@@ -43,29 +43,28 @@ export class HumanUnit extends Unit implements IHumanUnit {
         const lLeg = scene.add.rectangle(-7, 25, 6, 15, baseColor);
         const rLeg = scene.add.rectangle(7, 25, 6, 15, baseColor);
         
-        this.container.add([shadow, lArm, rArm, body, head, lLeg, rLeg]);
+        const visualContainer = scene.add.container(0, 0);
+        visualContainer.add([shadow, lArm, rArm, body, head, lLeg, rLeg]);
 
         // Detail based on type
         if (config.name === "Tyrant") {
-            // Golden crown
-
             const crown = scene.add.triangle(0, -22, -7, 0, 7, 0, 0, -10, 0xffd700);
             crown.setStrokeStyle(1, 0x000000);
             crown.setPosition(7,-12);
-            this.container.add(crown);
+            visualContainer.add(crown);
             
-            // Glowing aura
             const aura = scene.add.circle(0, 0, 25, 0x9c27b0, 0.1);
-            this.container.addAt(aura, 0);
+            visualContainer.addAt(aura, 0);
         } else if (config.name === "Mercenary") {
-            // Blue bandana
             const bandana = scene.add.rectangle(0, -12, 18, 4, 0x3f51b5);
-            this.container.add(bandana);
+            visualContainer.add(bandana);
         }
 
-        // Pulse animation for importance
+        this.container.add(visualContainer);
+
+        // Pulse animation on the visual container, NOT the main container
         scene.tweens.add({
-            targets: this.container,
+            targets: visualContainer,
             y: "-=2",
             duration: 1500 + Math.random() * 500,
             yoyo: true,
@@ -88,6 +87,11 @@ export class HumanUnit extends Unit implements IHumanUnit {
 
     setPosition(x: number, y: number) {
         this.container.setPosition(x, y);
+    }
+
+    setGridPosition(gx: number, gy: number) {
+        this.gx = gx;
+        this.gy = gy;
     }
 }
 
@@ -113,7 +117,7 @@ export const humans: IHumanUnit[] = [{
         maxHp: 100,
         attack: 10,
         defense: 10,
-        speed: 10,
+        speed: 5,
         faction: HumanFaction.Evil
     }
 ];

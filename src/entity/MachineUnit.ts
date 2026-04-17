@@ -1,7 +1,7 @@
 import { IUnit } from "./Unit";
 
 interface IMachine extends IUnit {
-
+    cost: number;//scrap metal cost to build
 }
 
 const machineUnits: IMachine[] = [
@@ -10,24 +10,27 @@ const machineUnits: IMachine[] = [
         description: "Sentinel. range attack",
         maxHp: 100,
         attack: 10,
-        defense: 10,
-        speed: 10,
+        defense: 5,
+        speed: 5,
+        cost: 50,
     },
     {
         name: "Heavy",
         description: "Heavy. melee attack",
-        maxHp: 100,
-        attack: 10,
-        defense: 10,
+        maxHp: 200,
+        attack: 20,
+        defense: 5,
         speed: 10,
+        cost: 50,
     },
     {
         name: "Drone",  
         description: "Drone. unaffect by terrain", 
         maxHp: 100,
         attack: 10,
-        defense: 10,
+        defense: 5,
         speed: 10,
+        cost: 30,
     },
     {
         name: "Bombard",
@@ -36,6 +39,7 @@ const machineUnits: IMachine[] = [
         attack: 10,
         defense: 10,
         speed: 10,
+        cost: 100,
     },
     {
         name: "Fixer",
@@ -44,6 +48,7 @@ const machineUnits: IMachine[] = [
         attack: 10,
         defense: 10,
         speed: 10,
+        cost: 30,
     },
 ]
 export interface SinBuff {

@@ -21,9 +21,15 @@ export class GameUI extends Scene {
             this.sidebar.updateDetails(data.unit, data.scrap);
         });
 
+        // Listen for AP updates from the Game scene
+        gameScene.events.on('ap-updated', (data: { ap: number, turn: number, activeUnitName: string }) => {
+            this.sidebar.updateAP(data.ap, data.turn, data.activeUnitName);
+        });
+
         // Clear details when mission restarts or UI is reset
         this.events.on('shutdown', () => {
             gameScene.events.off('cell-selected');
+            gameScene.events.off('ap-updated');
         });
     }
 }

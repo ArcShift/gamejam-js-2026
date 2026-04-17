@@ -6,6 +6,9 @@ export interface IUnit {
     defense: number;
     speed: number;
 }
+
+export const AP_MOVE_COST = 25;
+export const AP_ACT_THRESHOLD = 100;
 export enum UnitType {
     Human,
     Machine,
@@ -23,7 +26,7 @@ export class Unit implements IUnit {
     gy: number = 0;
     
     hp: number;
-    ap: number;
+    ap: number = 0;
 
     constructor(name: string, description: string, maxHp: number, attack: number, defense: number, speed: number, type: UnitType) {
         this.name = name;
@@ -34,5 +37,20 @@ export class Unit implements IUnit {
         this.defense = defense;
         this.speed = speed;
         this.type = type;
+    }
+
+    /** Regen AP by speed stat. */
+    regenAp() {
+        this.ap += this.speed;
+    }
+
+    canMove(): boolean {
+        return this.ap >= AP_MOVE_COST;
+    }
+
+    consumeMove(): boolean {
+        if (!this.canMove()) return false;
+        this.ap -= AP_MOVE_COST;
+        return true;
     }
 }
