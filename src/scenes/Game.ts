@@ -271,12 +271,12 @@ export class Game extends Scene
             this.units.set(`${pgx},${pgy}`, this.player);
 
             // Camera follow player
-            // this.camera.startFollow(this.player.container, true, 0.1, 0.1);
-            // this.camera.setFollowOffset(sidebarWidth / 2, 0);
+            this.camera.startFollow(this.player.container, true, 0.1, 0.1);
+            this.camera.setFollowOffset(0, 0);
             
-            // // Snap to player immediately at start
-            // this.camera.centerOn(px, py);
-            // this.camera.scrollX += sidebarWidth / 2;
+            // Snap to player immediately at start
+            this.camera.centerOn(px, py);
+            this.camera.scrollX += sidebarWidth / 2;
 
             // Create cell pools
             const allCells: {gx: number, gy: number}[] = [];
