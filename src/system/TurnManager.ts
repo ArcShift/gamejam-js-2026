@@ -16,7 +16,7 @@ export interface MoveAction {
     toGy: number;
 }
 
-const CHASE_RANGE = 4; // Manhattan distance to detect player
+const CHASE_RANGE = 5; // Manhattan distance to detect player
 
 export class TurnManager {
     private allUnits: Unit[] = [];
@@ -26,10 +26,15 @@ export class TurnManager {
     turnCount: number = 0;
     currentUnit: Unit | null = null;
 
+    // Map bounds for stuck check
+    private mapWidth: number = 20;
+    private mapHeight: number = 20;
+
     // Callbacks
     onEnemyMove: ((action: MoveAction, onComplete: () => void) => void) | null = null;
     onTurnTick: (() => void) | null = null;
     onPlayerTurnStart: (() => void) | null = null;
+    onLose: (() => void) | null = null;
 
     constructor(player: Player, unitMap: Map<string, any>) {
         this.player = player;
@@ -38,6 +43,11 @@ export class TurnManager {
 
     registerUnits(units: Unit[]) {
         this.allUnits = units;
+    }
+
+    setMapSize(width: number, height: number) {
+        this.mapWidth = width;
+        this.mapHeight = height;
     }
 
     /** Start the turn system loop */
@@ -58,6 +68,12 @@ export class TurnManager {
         this.currentUnit = highestAPUnit;
 
         if (this.currentUnit instanceof Player) {
+            // Check if player is surrounded before starting their turn
+            if (this.checkPlayerStuck()) {
+                this.state = SystemState.ANIMATING;
+                if (this.onLose) this.onLose();
+                return;
+            }
             this.state = SystemState.IDLE;
             if (this.onPlayerTurnStart) this.onPlayerTurnStart();
         } else if (this.currentUnit instanceof HumanUnit) {
@@ -80,8 +96,6 @@ export class TurnManager {
 
     /** Called after player action is complete */
     endPlayerAction() {
-        // Player action is finished. We don't necessarily give them another turn immediately.
-        // We re-evaluate who has the highest AP.
         this.nextTurn();
     }
 
@@ -127,10 +141,6 @@ export class TurnManager {
             }
         }
         
-        // If couldn't move or out of range, just end turn (consume minimal AP or just pass?)
-        // Usually if a unit "waits", they still consume some AP or we just tick.
-        // Let's say if they can't act, they just lose a bit of AP or we skip them.
-        // To prevent infinite loops of same unit "highest AP" but can't act:
         enemy.ap -= 10; // Penalty for passing/idle
         this.nextTurn();
     }
@@ -152,6 +162,9 @@ export class TurnManager {
             const ny = enemy.gy + dir.dy;
             const key = `${nx},${ny}`;
 
+            // Check map bounds
+            if (nx < 0 || nx >= this.mapWidth || ny < 0 || ny >= this.mapHeight) continue;
+
             if (this.unitMap.has(key)) continue;
 
             const dist = Math.abs(nx - this.player.gx) + Math.abs(ny - this.player.gy);
@@ -168,5 +181,26 @@ export class TurnManager {
         }
 
         return bestMove;
+    }
+
+    private checkPlayerStuck(): boolean {
+        const directions = [
+            { dx: 0, dy: -1 }, { dx: 0, dy: 1 },
+            { dx: -1, dy: 0 }, { dx: 1, dy: 0 },
+        ];
+
+        for (const dir of directions) {
+            const nx = this.player.gx + dir.dx;
+            const ny = this.player.gy + dir.dy;
+            const key = `${nx},${ny}`;
+
+            if (nx >= 0 && nx < this.mapWidth && ny >= 0 && ny < this.mapHeight) {
+                if (!this.unitMap.has(key)) {
+                    return false; // Found an empty adjacent cell!
+                }
+            }
+        }
+
+        return true; // No empty adjacent cells found
     }
 }

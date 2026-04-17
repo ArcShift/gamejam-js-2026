@@ -183,7 +183,7 @@ export class Sidebar extends GameObjects.Container {
         if (unit) {
             this.unitInfo.name.setText(unit.name.toUpperCase());
             this.unitInfo.hp.setText(`HP: ${unit.hp} / ${unit.maxHp}`);
-            this.unitInfo.stats.setText(`ATK: ${unit.attack}  DEF: ${unit.defense}  SPD: ${unit.speed}`);
+            this.unitInfo.stats.setText(`ATK: ${unit.attack} DEF: ${unit.defense} \nSPD: ${unit.speed} AP: ${Math.floor(unit.ap)}`);
             this.unitInfo.desc.setText(unit.description);
         } else {
             this.unitInfo.name.setText('NONE');

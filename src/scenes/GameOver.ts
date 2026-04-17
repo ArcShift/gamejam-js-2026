@@ -2,34 +2,78 @@ import { Scene } from 'phaser';
 
 export class GameOver extends Scene
 {
-    camera: Phaser.Cameras.Scene2D.Camera;
-    background: Phaser.GameObjects.Image;
-    gameover_text : Phaser.GameObjects.Text;
+    private message: string = 'GAME OVER';
 
     constructor ()
     {
         super('GameOver');
     }
 
+    init (data: { message?: string })
+    {
+        if (data.message) {
+            this.message = data.message;
+        }
+    }
+
     create ()
     {
-        this.camera = this.cameras.main
-        this.camera.setBackgroundColor(0xff0000);
+        const width = this.scale.width;
+        const height = this.scale.height;
 
-        this.background = this.add.image(512, 384, 'background');
-        this.background.setAlpha(0.5);
+        this.cameras.main.setBackgroundColor(0x0a0a0a);
+        this.cameras.main.fadeIn(500);
 
-        this.gameover_text = this.add.text(512, 384, 'Game Over', {
-            fontFamily: 'Arial Black', fontSize: 64, color: '#ffffff',
-            stroke: '#000000', strokeThickness: 8,
+        // Techy background effect (scanlines/grid)
+        const grid = this.add.grid(width/2, height/2, width, height, 64, 64, 0x000000, 0, 0x333333, 0.1);
+        
+        // Title
+        const title = this.add.text(width / 2, height / 2 - 50, 'CONNECTION TERMINATED', {
+            fontFamily: 'Orbitron, Arial Black',
+            fontSize: '48px',
+            color: '#ff4444',
+            stroke: '#000000',
+            strokeThickness: 8,
+        }).setOrigin(0.5);
+
+        // Custom Message
+        const subtext = this.add.text(width / 2, height / 2 + 30, this.message.toUpperCase(), {
+            fontFamily: 'Orbitron, monospace',
+            fontSize: '20px',
+            color: '#ffffff',
             align: 'center'
+        }).setOrigin(0.5);
+
+        // Pulse effect on title
+        this.tweens.add({
+            targets: title,
+            alpha: 0.7,
+            duration: 500,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
         });
-        this.gameover_text.setOrigin(0.5);
+
+        // Prompt to restart
+        const prompt = this.add.text(width / 2, height - 100, 'CLICK TO RETURN TO MISSION HUB', {
+            fontFamily: 'monospace',
+            fontSize: '16px',
+            color: '#888888'
+        }).setOrigin(0.5);
+
+        this.tweens.add({
+            targets: prompt,
+            alpha: 0.3,
+            duration: 1000,
+            yoyo: true,
+            repeat: -1
+        });
 
         this.input.once('pointerdown', () => {
-
-            this.scene.start('MainMenu');
-
+            this.cameras.main.fadeOut(500, 0, 0, 0);
+            this.cameras.main.once('camerafadeoutcomplete', () => {
+                this.scene.start('Campaign');
+            });
         });
     }
 }

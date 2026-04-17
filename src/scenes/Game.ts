@@ -151,6 +151,10 @@ export class Game extends Scene
                             const tx = this.mapOffsetX + gx * this.totalCellSize + this.cellSize / 2;
                             const ty = this.mapOffsetY + gy * this.totalCellSize + this.cellSize / 2;
 
+                            // Resume camera follow on player move
+                            this.camera.startFollow(this.player.container, true, 0.1, 0.1);
+                            this.camera.setFollowOffset(0, 0);
+
                             this.tweens.add({
                                 targets: this.player.container,
                                 x: tx,
@@ -243,6 +247,12 @@ export class Game extends Scene
             // Make map draggable for large maps
             this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
                 if (!pointer.isDown || pointer.x > width - sidebarWidth) return;
+                
+                // Stop following if manually dragging
+                if (Math.abs(pointer.x - pointer.prevPosition.x) > 1 || Math.abs(pointer.y - pointer.prevPosition.y) > 1) {
+                    this.camera.stopFollow();
+                }
+
                 this.camera.scrollX -= (pointer.x - pointer.prevPosition.x) / this.camera.zoom;
                 this.camera.scrollY -= (pointer.y - pointer.prevPosition.y) / this.camera.zoom;
             });
@@ -258,9 +268,15 @@ export class Game extends Scene
             this.player.setPosition(px, py);
             this.player.gx = pgx;
             this.player.gy = pgy;
-            // Give player starting AP so they can move immediately
-            this.player.ap = 50;
             this.units.set(`${pgx},${pgy}`, this.player);
+
+            // Camera follow player
+            // this.camera.startFollow(this.player.container, true, 0.1, 0.1);
+            // this.camera.setFollowOffset(sidebarWidth / 2, 0);
+            
+            // // Snap to player immediately at start
+            // this.camera.centerOn(px, py);
+            // this.camera.scrollX += sidebarWidth / 2;
 
             // Create cell pools
             const allCells: {gx: number, gy: number}[] = [];
@@ -343,6 +359,7 @@ export class Game extends Scene
             // Initialize Turn Manager
             this.turnManager = new TurnManager(this.player, this.units);
             this.turnManager.registerUnits(allGameUnits);
+            this.turnManager.setMapSize(activeMission.map_width, activeMission.map_height);
 
             // Handle enemy movement animation
             this.turnManager.onEnemyMove = (action, onComplete) => {
@@ -378,11 +395,19 @@ export class Game extends Scene
             };
 
             this.turnManager.onPlayerTurnStart = () => {
+                // Focus on player at start of turn
+                this.camera.startFollow(this.player.container, true, 0.1, 0.1);
+                this.camera.setFollowOffset(0, 0);
+
                 this.events.emit('ap-updated', {
                     ap: this.player.ap,
                     turn: this.turnManager.turnCount,
                     activeUnitName: this.player.name
                 });
+            };
+
+            this.turnManager.onLose = () => {
+                this.scene.start('GameOver', { message: 'YOU ARE SURROUNDED' });
             };
 
             this.turnManager.onTurnTick = () => {
