@@ -100,4 +100,8 @@ export class Unit implements IUnit {
         
         return true;
     }
+
+    faceTarget(targetGx: number) {
+        // Override in subclass
+    }
 }

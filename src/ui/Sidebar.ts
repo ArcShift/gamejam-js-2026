@@ -35,6 +35,12 @@ export class Sidebar extends GameObjects.Container {
     private summonPanel: GameObjects.Container;
     private machineButtons: GameObjects.Container[] = [];
 
+    // Layout members
+    private unitTitle: GameObjects.Text;
+    private weaponTitle: GameObjects.Text;
+    private scrapTitle: GameObjects.Text;
+    private detailsMargin: number = 20;
+
     constructor(scene: Scene, x: number, y: number, width: number, height: number) {
         super(scene, x, y);
         
@@ -64,8 +70,10 @@ export class Sidebar extends GameObjects.Container {
         this.add(pauseBtn);
 
         // Win Button (temp for testing narration)
-        const winBtn = this.createWinButton(scene, width / 2, height - 40);
-        this.add(winBtn);
+        if ("dev" === import.meta.env.VITE_ENV) {
+            const winBtn = this.createWinButton(scene, width / 2, height - 40);
+            this.add(winBtn);
+        }
 
         // Collect Scrap Button (hidden by default)
         this.createCollectButton(scene, width / 2, 420);
@@ -182,7 +190,7 @@ export class Sidebar extends GameObjects.Container {
         this.add(this.detailsContainer);
 
         // Unit Section
-        const unitTitle = scene.add.text(0, 0, 'UNIT DATA', {
+        this.unitTitle = scene.add.text(0, 0, 'UNIT DATA', {
             fontSize: '14px',
             fontFamily: 'Orbitron',
             color: '#00ffff'
@@ -190,50 +198,163 @@ export class Sidebar extends GameObjects.Container {
         
         this.unitInfo = {
             name: scene.add.text(0, 25, 'No Unit Selected', { fontSize: '18px', color: '#ffffff' }),
-            hp: scene.add.text(0, 50, '', { fontSize: '14px', color: '#ff5555' }),
+            hp: scene.add.text(0, 50, '', { fontSize: '13px', color: '#ff5555' }), // Smaller font for row
             stats: scene.add.text(0, 75, '', { fontSize: '13px', color: '#aaaaaa' }),
-            desc: scene.add.text(0, 200, '', { fontSize: '12px', color: '#888888', wordWrap: { width: width - 40 } })
+            desc: scene.add.text(0, 150, '', { fontSize: '12px', color: '#888888', wordWrap: { width: width - 40 } })
         };
 
-        const weaponTitle = scene.add.text(0, 105, 'WEAPONS', {
+        this.weaponTitle = scene.add.text(0, 105, 'WEAPONS', {
             fontSize: '11px',
             fontFamily: 'Orbitron',
             color: '#00ccff',
         });
-        weaponTitle.setAlpha(0.7);
+        this.weaponTitle.setAlpha(0.7);
 
         this.weaponContainer = scene.add.container(0, 125);
 
         // Scrap Section
-        const scrapY = 280;
-        const scrapTitle = scene.add.text(0, scrapY, 'RESOURCES', {
+        this.scrapTitle = scene.add.text(0, 250, 'RESOURCES', {
             fontSize: '14px',
             fontFamily: 'Orbitron',
             color: '#ffaa00'
         });
 
         this.scrapInfo = {
-            title: scene.add.text(0, scrapY + 25, '', { fontSize: '16px', color: '#ffffff' }),
-            value: scene.add.text(0, scrapY + 50, '', { fontSize: '14px', color: '#ffaa00' })
+            title: scene.add.text(0, 275, '', { fontSize: '16px', color: '#ffffff' }),
+            value: scene.add.text(0, 300, '', { fontSize: '14px', color: '#ffaa00' })
         };
 
-        this.carriedScrapText = scene.add.text(0, scrapY + 75, '', {
+        this.carriedScrapText = scene.add.text(0, 325, '', {
             fontSize: '12px',
             fontFamily: 'Orbitron',
             color: '#00ffff'
         });
 
         this.detailsContainer.add([
-            unitTitle, this.unitInfo.name, this.unitInfo.hp, this.unitInfo.stats, weaponTitle, this.weaponContainer, this.unitInfo.desc,
-            scrapTitle, this.scrapInfo.title, this.scrapInfo.value, this.carriedScrapText
+            this.unitTitle, this.unitInfo.name, this.unitInfo.hp, this.unitInfo.stats, this.weaponTitle, this.weaponContainer, this.unitInfo.desc,
+            this.scrapTitle, this.scrapInfo.title, this.scrapInfo.value, this.carriedScrapText
         ]);
+    }
+
+    private layoutDetails() {
+        let currentY = 0;
+        
+        // Unit Section
+        this.unitTitle.y = currentY;
+        currentY += 22;
+        
+        this.unitInfo.name.y = currentY;
+        currentY += 24;
+        
+        // Stats Row 1: HP & AP
+        this.unitInfo.hp.y = currentY;
+        currentY += 20;
+        
+        // Stats Row 2: DEF & SPD
+        this.unitInfo.stats.y = currentY;
+        currentY += 25;
+
+        // Weapons Section
+        if (this.weaponContainer.length > 0) {
+            this.weaponTitle.setVisible(true);
+            this.weaponTitle.y = currentY;
+            currentY += 18;
+            this.weaponContainer.y = currentY;
+            
+            // Calculate height of weapons
+            const weaponCount = this.weaponContainer.length;
+            currentY += (weaponCount * 18) + 10;
+        } else {
+            this.weaponTitle.setVisible(false);
+        }
+
+        // Description
+        if (this.unitInfo.desc.text.length > 0 && this.unitInfo.desc.text !== 'Select a grid to scan for units.') {
+            this.unitInfo.desc.y = currentY;
+            currentY += this.unitInfo.desc.height + 15;
+        } else if (this.unitInfo.desc.text === 'Select a grid to scan for units.') {
+            this.unitInfo.desc.y = currentY;
+            currentY += 30;
+        }
+
+        // Scrap Section
+        if (this.scrapInfo.title.text !== 'NONE' || this.carriedScrapText.visible) {
+            this.scrapTitle.setVisible(true);
+            this.scrapTitle.y = currentY;
+            currentY += 22;
+            
+            this.scrapInfo.title.y = currentY;
+            currentY += 22;
+            
+            this.scrapInfo.value.y = currentY;
+            currentY += 20;
+
+            if (this.carriedScrapText.visible) {
+                this.carriedScrapText.y = currentY;
+                currentY += 20;
+            }
+        } else {
+            this.scrapTitle.setVisible(false);
+        }
+
+        // Final layout of buttons
+        this.repositionActionButtons(currentY + 140);
+    }
+
+    private repositionActionButtons(startY: number = 420) {
+        let currentY = Math.max(startY, 400);
+        const sidebarWidth = 250;
+        const centerX = sidebarWidth / 2;
+
+        // Collect and Attack buttons can be side-by-side
+        if (this.collectBtn.visible && this.attackBtn.visible) {
+            // Resize them
+            const smallWidth = 100;
+            this.collectBtnBg.setSize(smallWidth, 45);
+            this.attackBtnBg.setSize(smallWidth, 45);
+            
+            this.collectBtn.x = centerX - 55;
+            this.attackBtn.x = centerX + 55;
+            
+            this.collectBtn.y = currentY + 22;
+            this.attackBtn.y = currentY + 22;
+            
+            currentY += 60;
+        } else {
+            // Restore size and stack
+            const normalWidth = 200;
+            this.collectBtnBg.setSize(normalWidth, 45);
+            this.attackBtnBg.setSize(normalWidth, 45);
+            
+            this.collectBtn.x = centerX;
+            this.attackBtn.x = centerX;
+            
+            if (this.collectBtn.visible) {
+                this.collectBtn.y = currentY + 22;
+                currentY += 50;
+            }
+            if (this.attackBtn.visible) {
+                this.attackBtn.y = currentY + 22;
+                currentY += 50;
+            }
+        }
+
+        // Switch and Summon buttons always full width
+        if (this.switchWeaponBtn.visible) {
+            this.switchWeaponBtn.y = currentY + 22;
+            currentY += 50;
+        }
+        if (this.summonBtn.visible) {
+            this.summonBtn.y = currentY + 22;
+            currentY += 50;
+        }
     }
 
     public updateDetails(unit: any | null, scrap: any | null) {
         if (unit) {
             this.unitInfo.name.setText(unit.name.toUpperCase());
-            this.unitInfo.hp.setText(`HP: ${unit.hp} / ${unit.maxHp}`);
-            this.unitInfo.stats.setText(`DEF: ${unit.defense} SPD: ${unit.speed}\nAP: ${Math.floor(unit.ap)}`);
+            this.unitInfo.hp.setText(`HP: ${unit.hp}/${unit.maxHp}  |  AP: ${Math.floor(unit.ap)}`);
+            this.unitInfo.stats.setText(`DEF: ${unit.defense}  |  SPD: ${unit.speed}`);
             
             this.weaponContainer.removeAll(true);
             if (unit.equippedWeapons && unit.equippedWeapons.length > 0) {
@@ -304,7 +425,7 @@ export class Sidebar extends GameObjects.Container {
 
         // We will manage attack button visibility from GameUI since it needs weapon data,
         // or just expose showAttackButton.
-        if (!unit || unit.name !== 'CORE-01' || unit.equippedWeapons.length <= 1) {
+        if (!unit || unit.name !== 'CORE-01' || (unit.equippedWeapons && unit.equippedWeapons.length <= 1)) {
             this.showSwitchWeaponButton(false);
         }
 
@@ -313,6 +434,9 @@ export class Sidebar extends GameObjects.Container {
             this.summonPanel.setVisible(false);
             this.detailsContainer.setVisible(true);
         }
+
+        // Refresh dynamic layout
+        this.layoutDetails();
     }
 
     public showCollectButton(visible: boolean, cost: number = 0) {
@@ -320,6 +444,7 @@ export class Sidebar extends GameObjects.Container {
         if (visible) {
             this.collectBtnText.setText(`COLLECT (${cost} AP)`);
         }
+        this.layoutDetails();
     }
 
     public showAttackButton(visible: boolean, cost: number = 0) {
@@ -327,14 +452,17 @@ export class Sidebar extends GameObjects.Container {
         if (visible) {
             this.attackBtnText.setText(`ATTACK (${cost} AP)`);
         }
+        this.layoutDetails();
     }
 
     public showSwitchWeaponButton(visible: boolean) {
         this.switchWeaponBtn.setVisible(visible);
+        this.layoutDetails();
     }
 
     public showSummonButton(visible: boolean, cost: number = 0) {
         this.summonBtn.setVisible(visible);
+        this.layoutDetails();
     }
 
     public openSummonPanel(machines: any[], currentScrap: number) {
@@ -380,8 +508,8 @@ export class Sidebar extends GameObjects.Container {
         this.collectBtnBg = scene.add.rectangle(0, 0, 200, 45, 0xffaa00, 0.2);
         this.collectBtnBg.setStrokeStyle(2, 0xffaa00);
         
-        this.collectBtnText = scene.add.text(0, 0, 'COLLECT SCRAP', {
-            fontSize: '14px',
+        this.collectBtnText = scene.add.text(0, 0, 'COLLECT', {
+            fontSize: '11px', // Smaller font for potential side-by-side
             fontFamily: 'Orbitron',
             color: '#ffffff'
         }).setOrigin(0.5);
@@ -411,7 +539,7 @@ export class Sidebar extends GameObjects.Container {
         this.attackBtnBg.setStrokeStyle(2, 0xff0000);
         
         this.attackBtnText = scene.add.text(0, 0, 'ATTACK', {
-            fontSize: '14px',
+            fontSize: '11px', // Smaller font for potential side-by-side
             fontFamily: 'Orbitron',
             color: '#ffffff'
         }).setOrigin(0.5);

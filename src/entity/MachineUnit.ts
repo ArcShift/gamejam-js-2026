@@ -4,10 +4,12 @@ import { IUnit, Unit, UnitType, Faction } from "./Unit";
 export interface IMachine extends IUnit {
     cost: number;//scrap metal cost to build
     activeSkill?: string;
+    spriteIndex: number[];//face, normal sprite, enhanced sprite
 }
 
 export class MachineUnit extends Unit {
     container: Phaser.GameObjects.Container;
+    sprite: Phaser.GameObjects.Sprite;
 
     constructor(scene: Scene, template: IMachine, faction: Faction) {
         super(template.name, template.description, template.maxHp, template.defense, template.speed, UnitType.Machine, template.weapon, faction);
@@ -18,11 +20,20 @@ export class MachineUnit extends Unit {
         
         const baseColor = faction === Faction.Player ? 0x00ff88 : 0xff4444;
         
-        this.createGeometry(scene, template.name, baseColor);
+        const visualContainer = scene.add.container(0, 0);
         
-        // Subtle hover animation
+        // Add a shadow for depth
+        const shadow = scene.add.ellipse(0, 15, 24, 12, 0x000000, 0.3);
+        
+        this.sprite = scene.add.sprite(0, 0, 'machine', template.spriteIndex[1]);
+        this.sprite.setScale(0.3); // Scale to fit 64x64 cell
+
+        visualContainer.add([shadow, this.sprite]);
+        this.container.add(visualContainer);
+        
+        // Subtle hover animation on the visual container, NOT the main container
         scene.tweens.add({
-            targets: this.container,
+            targets: visualContainer,
             y: "-=3",
             duration: 2000,
             yoyo: true,
@@ -34,47 +45,16 @@ export class MachineUnit extends Unit {
         scene.add.existing(this.container);
     }
 
-    private createGeometry(scene: Scene, name: string, color: number) {
-        const visual = scene.add.container(0, 0);
-        
-        if (name === "Heavy") {
-            // Bulkier, armored look
-            const body = scene.add.rectangle(0, 0, 44, 44, color);
-            body.setStrokeStyle(3, 0x000000, 0.5);
-            
-            const shield = scene.add.triangle(0, 0, -22, 22, 22, 22, 0, -22, 0x000000, 0.3);
-            const core = scene.add.rectangle(0, 0, 16, 16, 0xffffff, 0.8);
-            
-            visual.add([body, shield, core]);
-        } else if (name === "Drone") {
-            // Sleek, diamond-shaped flyer
-            const body = scene.add.polygon(0, 0, [0, -22, 18, 0, 0, 22, -18, 0], color);
-            body.setStrokeStyle(2, 0xffffff, 0.8);
-            
-            const wingL = scene.add.rectangle(-20, 0, 8, 4, color);
-            const wingR = scene.add.rectangle(20, 0, 8, 4, color);
-            
-            const eye = scene.add.circle(0, 0, 4, 0xffffff);
-            
-            visual.add([body, wingL, wingR, eye]);
-        } else {
-            // Standard Sentinel - Boxy turret
-            const body = scene.add.rectangle(0, 0, 36, 36, color);
-            body.setStrokeStyle(2, 0xffffff, 0.8);
-            
-            const turret = scene.add.rectangle(0, 0, 20, 20, 0x000000, 0.5);
-            turret.setRotation(Math.PI / 4);
-            
-            const lens = scene.add.circle(0, 0, 6, 0xffffff, 1);
-            
-            visual.add([body, turret, lens]);
-        }
-        
-        this.container.add(visual);
-    }
-
     setPosition(x: number, y: number) {
         this.container.setPosition(x, y);
+    }
+    
+    faceTarget(targetGx: number) {
+        if (targetGx < this.gx) {
+            this.sprite.setFlipX(true);
+        } else if (targetGx > this.gx) {
+            this.sprite.setFlipX(false);
+        }
     }
 }
 
@@ -84,20 +64,22 @@ export const machineUnits: IMachine[] = [
         description: "Standard tactical turret. Balanced range and speed.",
         maxHp: 100,
         defense: 5,
-        speed: 5,
+        speed: 10,
         cost: 30,
         weapon: ['assault_rifle', 'knife'],
-        faction: Faction.Player
-    },
+        faction: Faction.Player,
+        spriteIndex: [0, 1, 2]
+    },  
     {
         name: "Heavy",
         description: "Slow, armored construction. Melee focus.",
         maxHp: 200,
         defense: 12,
-        speed: 3,
+        speed: 10,
         cost: 50,
         weapon: ['knife'],
-        faction: Faction.Player
+        faction: Faction.Player,
+        spriteIndex: [3, 4, 5]
     },
     {
         name: "Drone",  
@@ -107,6 +89,7 @@ export const machineUnits: IMachine[] = [
         speed: 15,
         cost: 20,
         weapon: ['knife'],
-        faction: Faction.Player
+        faction: Faction.Player,
+        spriteIndex: [6, 7, 8]
     }
 ];

@@ -147,6 +147,7 @@ export class Game extends Scene
 
                             // Update map tracking
                             this.units.delete(`${this.player.gx},${this.player.gy}`);
+                            this.player.faceTarget(gx);
                             this.player.gx = gx;
                             this.player.gy = gy;
                             this.units.set(targetKey, this.player);
@@ -385,7 +386,9 @@ export class Game extends Scene
             this.turnManager.onEnemyMove = (action, onComplete) => {
                 const targetX = this.mapOffsetX + action.toGx * this.totalCellSize + this.cellSize / 2;
                 const targetY = this.mapOffsetY + action.toGy * this.totalCellSize + this.cellSize / 2;
-                const humanUnit = action.unit as HumanUnit;
+                const unit = action.unit as any;
+                
+                unit.faceTarget(action.toGx);
 
                 // Flash the enemy red briefly to indicate it's acting
                 const flashGraphic = this.add.circle(
@@ -403,7 +406,7 @@ export class Game extends Scene
                 });
 
                 this.tweens.add({
-                    targets: humanUnit.container,
+                    targets: unit.container,
                     x: targetX,
                     y: targetY,
                     duration: 250,
@@ -416,6 +419,7 @@ export class Game extends Scene
 
             // Handle unit attack animation
             this.turnManager.onUnitAttack = (attacker, target, onComplete) => {
+                attacker.faceTarget(target.gx);
                 const targetX = this.mapOffsetX + target.gx * this.totalCellSize + this.cellSize / 2;
                 const targetY = this.mapOffsetY + target.gy * this.totalCellSize + this.cellSize / 2;
                 
@@ -452,6 +456,7 @@ export class Game extends Scene
                                 this.turnManager.removeUnit(target);
                                 // @ts-ignore
                                 if (target.container) target.container.destroy();
+                                this.checkWinCondition();
                             }
                         }
 
@@ -572,6 +577,7 @@ export class Game extends Scene
                 const target = this.units.get(key);
                 
                 if (target && target.type === UnitType.Human && this.turnManager.state === SystemState.IDLE) {
+                    this.player.faceTarget(target.gx);
                     if (this.player.attack(target)) {
                         this.turnManager.state = SystemState.ANIMATING;
                         
@@ -598,6 +604,7 @@ export class Game extends Scene
                                     this.selectedGx = -1;
                                     this.selectedGy = -1;
                                     this.selector.setVisible(false);
+                                    this.checkWinCondition();
                                 }
                                 
                                 // Update selection info
@@ -736,6 +743,21 @@ export class Game extends Scene
         this.arrow.lineBetween(toX, toY, toX - headSize * Math.cos(angle + Math.PI / 6), toY - headSize * Math.sin(angle + Math.PI / 6));
     }
 
+    private checkWinCondition() {
+        let hasEnemies = false;
+        for (const unit of this.units.values()) {
+            if (unit.faction === Faction.Evil) {
+                hasEnemies = true;
+                break;
+            }
+        }
+        
+        if (!hasEnemies) {
+            this.turnManager.state = SystemState.ANIMATING;
+            this.winMission();
+        }
+    }
+
     public winMission() {
         const activeMission = this.mission || GManager.currentMission;
         
@@ -808,39 +830,53 @@ export class Game extends Scene
 
     private performSummon(gx: number, gy: number) {
         const template = machineUnits[this.selectedMachineIndex];
-        if (this.player.scrap >= template.cost) {
-            this.player.scrap -= template.cost;
-            
-            const machine = new MachineUnit(this, template, Faction.Player);
-            machine.gx = gx;
-            machine.gy = gy;
-            machine.setPosition(
-                this.mapOffsetX + gx * this.totalCellSize + this.cellSize / 2,
-                this.mapOffsetY + gy * this.totalCellSize + this.cellSize / 2
-            );
-            
-            this.units.set(`${gx},${gy}`, machine);
-            this.turnManager.registerUnits([...this.units.values()]);
-            
-            // Visual feedback
-            this.cameras.main.flash(300, 0, 255, 136);
-            
+        
+        if (this.player.scrap < template.cost) {
+            return;
+        }
+
+        if (this.player.ap < template.cost) {
+            this.showNotEnoughAP();
             this.clearSummonIndicators();
             this.events.emit('summon-panel-closed');
-            
-            // Update UI
-            this.events.emit('cell-selected', { 
-                unit: this.player, 
-                scrap: this.scrap.get(`${this.selectedGx},${this.selectedGy}`), 
-                canAttack: false, 
-                attackCost: 0 
-            });
-
-            this.events.emit('ap-updated', {
-                ap: this.player.ap,
-                turn: this.turnManager.turnCount,
-                activeUnitName: this.player.name
-            });
+            return;
         }
+
+        this.player.scrap -= template.cost;
+        this.player.ap -= template.cost;
+        
+        const machine = new MachineUnit(this, template, Faction.Player);
+        machine.gx = gx;
+        machine.gy = gy;
+        machine.setPosition(
+            this.mapOffsetX + gx * this.totalCellSize + this.cellSize / 2,
+            this.mapOffsetY + gy * this.totalCellSize + this.cellSize / 2
+        );
+        
+        this.units.set(`${gx},${gy}`, machine);
+        this.turnManager.registerUnits([...this.units.values()]);
+        
+        // Visual feedback
+        this.cameras.main.flash(300, 0, 255, 136);
+        
+        this.clearSummonIndicators();
+        this.events.emit('summon-panel-closed');
+        
+        // Update UI
+        this.events.emit('cell-selected', { 
+            unit: this.player, 
+            scrap: this.scrap.get(`${this.selectedGx},${this.selectedGy}`), 
+            canAttack: false, 
+            attackCost: 0 
+        });
+
+        this.events.emit('ap-updated', {
+            ap: this.player.ap,
+            turn: this.turnManager.turnCount,
+            activeUnitName: this.player.name
+        });
+
+        // End turn after summoning
+        this.turnManager.endPlayerAction();
     }
 }

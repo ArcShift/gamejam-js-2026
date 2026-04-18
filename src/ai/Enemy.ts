@@ -26,11 +26,21 @@ export class EnemyAI {
         
         // 1. Try to attack if in range
         if (self.equippedWeapons && self.equippedWeapons.length > 0) {
-            const weaponsByRange = self.equippedWeapons
+            // Sort weapons to prefer those that "fit" the distance best.
+            // For a target in close range, we prefer shorter range (melee) weapons.
+            // If ranges are equal, we prefer the one with higher damage.
+            const sortedWeapons = self.equippedWeapons
                 .map((w, index) => ({ weapon: w, index }))
-                .sort((a, b) => b.weapon.range - a.weapon.range);
+                .sort((a, b) => {
+                    // Primary: Shortest range first (prefer melee if possible)
+                    if (a.weapon.range !== b.weapon.range) {
+                        return a.weapon.range - b.weapon.range;
+                    }
+                    // Secondary: Higher damage
+                    return b.weapon.damage - a.weapon.damage;
+                });
 
-            for (const item of weaponsByRange) {
+            for (const item of sortedWeapons) {
                 const weapon = item.weapon;
                 if (dist <= weapon.range && self.ap >= weapon.apCost && weapon.currentAmmo > 0) {
                     self.attack(target, item.index);
