@@ -6,7 +6,7 @@ import { Player } from '../entity/Player';
 import { Scrap } from '../entity/Scrap';
 import { HumanUnit, humans } from '../entity/HumanUnit';
 import { TurnManager, SystemState } from '../system/TurnManager';
-import { Unit } from '../entity/Unit';
+import { Unit, UnitType } from '../entity/Unit';
 
 export class Game extends Scene
 {
@@ -171,7 +171,7 @@ export class Game extends Scene
 
                                      // Update sidebar details for new position (e.g. to show collect button)
                                      const scrap = this.scrap.get(`${gx},${gy}`);
-                                     this.events.emit('cell-selected', { unit: this.player, scrap });
+                                     this.events.emit('cell-selected', { unit: this.player, scrap, canAttack: false, attackCost: 0 });
 
                                     // Emit AP update for sidebar
                                     this.events.emit('ap-updated', {
@@ -240,7 +240,18 @@ export class Game extends Scene
                         this.arrow.setVisible(false);
                     }
 
-                    this.events.emit('cell-selected', { unit, scrap });
+                    let canAttack = false;
+                    let attackCost = 0;
+                    if (unit && unit.type === UnitType.Human && this.player.equippedWeapons && this.player.equippedWeapons.length > 0) {
+                        const weapon = this.player.equippedWeapons[this.player.selectedWeaponIndex];
+                        const dist = Math.abs(this.player.gx - unit.gx) + Math.abs(this.player.gy - unit.gy);
+                        if (dist <= weapon.range && this.player.ap >= weapon.apCost && weapon.currentAmmo > 0) {
+                            canAttack = true;
+                            attackCost = weapon.apCost;
+                        }
+                    }
+
+                    this.events.emit('cell-selected', { unit, scrap, canAttack, attackCost });
                 } else {
                     this.selector.setVisible(false);
                     this.arrow.setVisible(false);
@@ -399,6 +410,49 @@ export class Game extends Scene
                 });
             };
 
+            // Handle enemy attack animation
+            this.turnManager.onEnemyAttack = (enemy, onComplete) => {
+                const flashGraphic = this.add.rectangle(
+                    this.mapOffsetX + this.player.gx * this.totalCellSize + this.cellSize / 2,
+                    this.mapOffsetY + this.player.gy * this.totalCellSize + this.cellSize / 2,
+                    this.cellSize, this.cellSize, 0xff0000, 0.6
+                );
+                flashGraphic.setDepth(20);
+
+                const enemyFlash = this.add.circle(
+                    this.mapOffsetX + enemy.gx * this.totalCellSize + this.cellSize / 2,
+                    this.mapOffsetY + enemy.gy * this.totalCellSize + this.cellSize / 2,
+                    20, 0xffffff, 0.8
+                );
+                enemyFlash.setDepth(20);
+
+                this.tweens.add({
+                    targets: [flashGraphic, enemyFlash],
+                    alpha: 0,
+                    duration: 300,
+                    onComplete: () => {
+                        flashGraphic.destroy();
+                        enemyFlash.destroy();
+
+                        // Refresh UI if player is selected
+                        if (this.selectedGx === this.player.gx && this.selectedGy === this.player.gy) {
+                            this.events.emit('cell-selected', { 
+                                unit: this.player, 
+                                scrap: this.scrap.get(`${this.player.gx},${this.player.gy}`),
+                                canAttack: false, attackCost: 0
+                            });
+                        }
+
+                        if (this.player.isDead()) {
+                            this.turnManager.state = SystemState.ANIMATING;
+                            this.scene.start('GameOver', { message: 'CORE COMPROMISED' });
+                        } else {
+                            onComplete();
+                        }
+                    }
+                });
+            };
+
             this.turnManager.onPlayerTurnStart = () => {
                 // Focus on player at start of turn
                 this.camera.startFollow(this.player.container, true, 0.1, 0.1);
@@ -494,7 +548,90 @@ export class Game extends Scene
                     });
                     
                     // Update selection info
-                    this.events.emit('cell-selected', { unit: this.player, scrap: fullyCollected ? null : scrap });
+                    this.events.emit('cell-selected', { unit: this.player, scrap: fullyCollected ? null : scrap, canAttack: false, attackCost: 0 });
+                }
+            });
+
+            // Handle attack action
+            this.events.on('attack-action', () => {
+                const key = `${this.selectedGx},${this.selectedGy}`;
+                const target = this.units.get(key);
+                
+                if (target && target.type === UnitType.Human && this.turnManager.state === SystemState.IDLE) {
+                    if (this.player.attack(target)) {
+                        this.turnManager.state = SystemState.ANIMATING;
+                        
+                        // Flash the target red
+                        const targetX = this.mapOffsetX + target.gx * this.totalCellSize + this.cellSize / 2;
+                        const targetY = this.mapOffsetY + target.gy * this.totalCellSize + this.cellSize / 2;
+                        
+                        const flashGraphic = this.add.rectangle(
+                            targetX, targetY,
+                            this.cellSize, this.cellSize, 0xff0000, 0.5
+                        );
+                        flashGraphic.setDepth(20);
+
+                        this.tweens.add({
+                            targets: flashGraphic,
+                            alpha: 0,
+                            duration: 300,
+                            onComplete: () => {
+                                flashGraphic.destroy();
+                                if (target.isDead()) {
+                                    this.units.delete(key);
+                                    target.container.destroy();
+                                    this.turnManager.removeUnit(target);
+                                    this.selectedGx = -1;
+                                    this.selectedGy = -1;
+                                    this.selector.setVisible(false);
+                                }
+                                
+                                // Update selection info
+                                const stillAlive = !target.isDead();
+                                const currentWeapon = this.player.equippedWeapons[this.player.selectedWeaponIndex];
+                                this.events.emit('cell-selected', { 
+                                    unit: stillAlive ? target : null, 
+                                    scrap: this.scrap.get(key),
+                                    canAttack: stillAlive ? this.player.ap >= currentWeapon.apCost : false,
+                                    attackCost: stillAlive ? currentWeapon.apCost : 0
+                                });
+
+                                // Emit AP update
+                                this.events.emit('ap-updated', {
+                                    ap: this.player.ap,
+                                    turn: this.turnManager.turnCount,
+                                    activeUnitName: this.player.name
+                                });
+
+                                this.turnManager.endPlayerAction();
+                            }
+                        });
+                    }
+                }
+            });
+            
+            // Handle switch weapon action
+            this.events.on('switch-weapon-action', () => {
+                if (this.turnManager.state === SystemState.IDLE) {
+                    this.player.selectedWeaponIndex = (this.player.selectedWeaponIndex + 1) % this.player.equippedWeapons.length;
+                    
+                    // Re-calculate selection info with new weapon
+                    const key = `${this.selectedGx},${this.selectedGy}`;
+                    const unit = this.units.get(key);
+                    const scrap = this.scrap.get(key);
+                    
+                    let canAttack = false;
+                    let attackCost = 0;
+                    if (unit && unit.type === UnitType.Human && this.player.equippedWeapons.length > 0) {
+                        const weapon = this.player.equippedWeapons[this.player.selectedWeaponIndex];
+                        const dist = Math.abs(this.player.gx - unit.gx) + Math.abs(this.player.gy - unit.gy);
+                        if (dist <= weapon.range && this.player.ap >= weapon.apCost && weapon.currentAmmo > 0) {
+                            canAttack = true;
+                            attackCost = weapon.apCost;
+                        }
+                    }
+
+                    this.events.emit('cell-selected', { unit, scrap, canAttack, attackCost });
                 }
             });
 

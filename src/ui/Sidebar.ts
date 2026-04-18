@@ -3,6 +3,7 @@ import { Scene, GameObjects } from 'phaser';
 export class Sidebar extends GameObjects.Container {
     private detailsContainer: GameObjects.Container;
     private unitInfo: { name: GameObjects.Text, hp: GameObjects.Text, stats: GameObjects.Text, desc: GameObjects.Text };
+    private weaponContainer: GameObjects.Container;
     private scrapInfo: { title: GameObjects.Text, value: GameObjects.Text };
     private bg: GameObjects.Rectangle;
 
@@ -18,6 +19,14 @@ export class Sidebar extends GameObjects.Container {
     private collectBtnText: GameObjects.Text;
     private collectBtnBg: GameObjects.Rectangle;
     private carriedScrapText: GameObjects.Text;
+
+    private attackBtn: GameObjects.Container;
+    private attackBtnText: GameObjects.Text;
+    private attackBtnBg: GameObjects.Rectangle;
+
+    private switchWeaponBtn: GameObjects.Container;
+    private switchWeaponBtnText: GameObjects.Text;
+    private switchWeaponBtnBg: GameObjects.Rectangle;
 
     constructor(scene: Scene, x: number, y: number, width: number, height: number) {
         super(scene, x, y);
@@ -53,6 +62,12 @@ export class Sidebar extends GameObjects.Container {
 
         // Collect Scrap Button (hidden by default)
         this.createCollectButton(scene, width / 2, 420);
+
+        // Attack Button (hidden by default)
+        this.createAttackButton(scene, width / 2, 420); // They will likely not overlap because player can't collect scrap from an enemy cell
+
+        // Switch Weapon Button (hidden by default)
+        this.createSwitchWeaponButton(scene, width / 2, 470);
 
         // Add the container to the scene
         scene.add.existing(this);
@@ -163,12 +178,21 @@ export class Sidebar extends GameObjects.Container {
         this.unitInfo = {
             name: scene.add.text(0, 25, 'No Unit Selected', { fontSize: '18px', color: '#ffffff' }),
             hp: scene.add.text(0, 50, '', { fontSize: '14px', color: '#ff5555' }),
-            stats: scene.add.text(0, 70, '', { fontSize: '13px', color: '#aaaaaa' }),
-            desc: scene.add.text(0, 95, '', { fontSize: '12px', color: '#888888', wordWrap: { width: width - 40 } })
+            stats: scene.add.text(0, 75, '', { fontSize: '13px', color: '#aaaaaa' }),
+            desc: scene.add.text(0, 200, '', { fontSize: '12px', color: '#888888', wordWrap: { width: width - 40 } })
         };
 
+        const weaponTitle = scene.add.text(0, 105, 'WEAPONS', {
+            fontSize: '11px',
+            fontFamily: 'Orbitron',
+            color: '#00ccff',
+            alpha: 0.7
+        });
+
+        this.weaponContainer = scene.add.container(0, 125);
+
         // Scrap Section
-        const scrapY = 180;
+        const scrapY = 280;
         const scrapTitle = scene.add.text(0, scrapY, 'RESOURCES', {
             fontSize: '14px',
             fontFamily: 'Orbitron',
@@ -187,7 +211,7 @@ export class Sidebar extends GameObjects.Container {
         });
 
         this.detailsContainer.add([
-            unitTitle, this.unitInfo.name, this.unitInfo.hp, this.unitInfo.stats, this.unitInfo.desc,
+            unitTitle, this.unitInfo.name, this.unitInfo.hp, this.unitInfo.stats, weaponTitle, this.weaponContainer, this.unitInfo.desc,
             scrapTitle, this.scrapInfo.title, this.scrapInfo.value, this.carriedScrapText
         ]);
     }
@@ -196,12 +220,44 @@ export class Sidebar extends GameObjects.Container {
         if (unit) {
             this.unitInfo.name.setText(unit.name.toUpperCase());
             this.unitInfo.hp.setText(`HP: ${unit.hp} / ${unit.maxHp}`);
-            this.unitInfo.stats.setText(`ATK: ${unit.attack} DEF: ${unit.defense} \nSPD: ${unit.speed} AP: ${Math.floor(unit.ap)}`);
+            this.unitInfo.stats.setText(`DEF: ${unit.defense} SPD: ${unit.speed}\nAP: ${Math.floor(unit.ap)}`);
+            
+            this.weaponContainer.removeAll(true);
+            if (unit.equippedWeapons && unit.equippedWeapons.length > 0) {
+                unit.equippedWeapons.forEach((w: any, index: number) => {
+                    const isActive = index === unit.selectedWeaponIndex;
+                    const color = isActive ? '#00ffff' : '#666666';
+                    const prefix = isActive ? '> ' : '  ';
+                    
+                    const weaponTxt = this.scene.add.text(0, index * 18, `${prefix}${w.name.toUpperCase()} [${w.currentAmmo}/${w.maxAmmo}]`, {
+                        fontSize: '11px',
+                        fontFamily: 'Orbitron',
+                        color: color
+                    });
+                    
+                    if (isActive) {
+                        weaponTxt.setStroke('#00ffff', 1);
+                    }
+                    
+                    this.weaponContainer.add(weaponTxt);
+                });
+            } else {
+                this.weaponContainer.add(this.scene.add.text(0, 0, 'NONE', { fontSize: '11px', color: '#666666' }));
+            }
+            
+            // Show switch weapon button if player has more than 1 weapon
+            if (unit.name === 'CORE-01' && unit.equippedWeapons.length > 1) {
+                this.showSwitchWeaponButton(true);
+            } else {
+                this.showSwitchWeaponButton(false);
+            }
+            
             this.unitInfo.desc.setText(unit.description);
         } else {
             this.unitInfo.name.setText('NONE');
             this.unitInfo.hp.setText('');
             this.unitInfo.stats.setText('');
+            this.weaponContainer.removeAll(true);
             this.unitInfo.desc.setText('Select a grid to scan for units.');
         }
 
@@ -225,6 +281,12 @@ export class Sidebar extends GameObjects.Container {
         if (!scrap || !unit || unit.name !== 'CORE-01') {
             this.showCollectButton(false);
         }
+
+        // We will manage attack button visibility from GameUI since it needs weapon data,
+        // or just expose showAttackButton.
+        if (!unit || unit.name !== 'CORE-01' || unit.equippedWeapons.length <= 1) {
+            this.showSwitchWeaponButton(false);
+        }
     }
 
     public showCollectButton(visible: boolean, cost: number = 0) {
@@ -232,6 +294,17 @@ export class Sidebar extends GameObjects.Container {
         if (visible) {
             this.collectBtnText.setText(`COLLECT (${cost} AP)`);
         }
+    }
+
+    public showAttackButton(visible: boolean, cost: number = 0) {
+        this.attackBtn.setVisible(visible);
+        if (visible) {
+            this.attackBtnText.setText(`ATTACK (${cost} AP)`);
+        }
+    }
+
+    public showSwitchWeaponButton(visible: boolean) {
+        this.switchWeaponBtn.setVisible(visible);
     }
 
     private createCollectButton(scene: Scene, x: number, y: number) {
@@ -261,6 +334,66 @@ export class Sidebar extends GameObjects.Container {
 
         this.collectBtnBg.on('pointerdown', () => {
             this.scene.events.emit('collect-scrap-request');
+        });
+    }
+
+    private createAttackButton(scene: Scene, x: number, y: number) {
+        this.attackBtn = scene.add.container(x, y);
+        this.attackBtnBg = scene.add.rectangle(0, 0, 200, 45, 0xff0000, 0.2);
+        this.attackBtnBg.setStrokeStyle(2, 0xff0000);
+        
+        this.attackBtnText = scene.add.text(0, 0, 'ATTACK', {
+            fontSize: '14px',
+            fontFamily: 'Orbitron',
+            color: '#ffffff'
+        }).setOrigin(0.5);
+
+        this.attackBtn.add([this.attackBtnBg, this.attackBtnText]);
+        this.add(this.attackBtn);
+
+        this.attackBtnBg.setInteractive({ useHandCursor: true });
+        this.attackBtn.setVisible(false);
+
+        this.attackBtnBg.on('pointerover', () => {
+            this.attackBtnBg.setFillStyle(0xff0000, 0.4);
+        });
+
+        this.attackBtnBg.on('pointerout', () => {
+            this.attackBtnBg.setFillStyle(0xff0000, 0.2);
+        });
+
+        this.attackBtnBg.on('pointerdown', () => {
+            this.scene.events.emit('attack-request');
+        });
+    }
+
+    private createSwitchWeaponButton(scene: Scene, x: number, y: number) {
+        this.switchWeaponBtn = scene.add.container(x, y);
+        this.switchWeaponBtnBg = scene.add.rectangle(0, 0, 200, 45, 0x00ccff, 0.2);
+        this.switchWeaponBtnBg.setStrokeStyle(2, 0x00ccff);
+        
+        this.switchWeaponBtnText = scene.add.text(0, 0, 'SWITCH WEAPON', {
+            fontSize: '14px',
+            fontFamily: 'Orbitron',
+            color: '#ffffff'
+        }).setOrigin(0.5);
+
+        this.switchWeaponBtn.add([this.switchWeaponBtnBg, this.switchWeaponBtnText]);
+        this.add(this.switchWeaponBtn);
+
+        this.switchWeaponBtnBg.setInteractive({ useHandCursor: true });
+        this.switchWeaponBtn.setVisible(false);
+
+        this.switchWeaponBtnBg.on('pointerover', () => {
+            this.switchWeaponBtnBg.setFillStyle(0x00ccff, 0.4);
+        });
+
+        this.switchWeaponBtnBg.on('pointerout', () => {
+            this.switchWeaponBtnBg.setFillStyle(0x00ccff, 0.2);
+        });
+
+        this.switchWeaponBtnBg.on('pointerdown', () => {
+            this.scene.events.emit('switch-weapon-request');
         });
     }
 

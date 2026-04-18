@@ -17,7 +17,7 @@ export class GameUI extends Scene {
 
         // Listen for selection events from the Game scene
         const gameScene = this.scene.get('Game');
-        gameScene.events.on('cell-selected', (data: { unit: any, scrap: any }) => {
+        gameScene.events.on('cell-selected', (data: { unit: any, scrap: any, canAttack?: boolean, attackCost?: number }) => {
             this.sidebar.updateDetails(data.unit, data.scrap);
             
             // Check if we should show the collect button
@@ -27,11 +27,27 @@ export class GameUI extends Scene {
             } else {
                 this.sidebar.showCollectButton(false);
             }
+
+            if (data.canAttack) {
+                this.sidebar.showAttackButton(true, data.attackCost);
+            } else {
+                this.sidebar.showAttackButton(false);
+            }
         });
 
         // Forward collect request to Game scene
         this.events.on('collect-scrap-request', () => {
             gameScene.events.emit('collect-scrap-action');
+        });
+
+        // Forward attack request to Game scene
+        this.events.on('attack-request', () => {
+            gameScene.events.emit('attack-action');
+        });
+
+        // Forward switch weapon request to Game scene
+        this.events.on('switch-weapon-request', () => {
+            gameScene.events.emit('switch-weapon-action');
         });
 
         // Listen for AP updates from the Game scene

@@ -1,6 +1,7 @@
 import { Unit, AP_ACT_THRESHOLD } from '../entity/Unit';
 import { HumanUnit } from '../entity/HumanUnit';
 import { Player } from '../entity/Player';
+import { EnemyAI } from '../ai/Enemy';
 
 export enum SystemState {
     IDLE,        // Waiting for player input
@@ -16,7 +17,7 @@ export interface MoveAction {
     toGy: number;
 }
 
-const CHASE_RANGE = 5; // Manhattan distance to detect player
+
 
 export class TurnManager {
     private allUnits: Unit[] = [];
@@ -32,6 +33,7 @@ export class TurnManager {
 
     // Callbacks
     onEnemyMove: ((action: MoveAction, onComplete: () => void) => void) | null = null;
+    onEnemyAttack: ((enemy: HumanUnit, onComplete: () => void) => void) | null = null;
     onTurnTick: (() => void) | null = null;
     onPlayerTurnStart: (() => void) | null = null;
     onLose: (() => void) | null = null;
@@ -43,6 +45,10 @@ export class TurnManager {
 
     registerUnits(units: Unit[]) {
         this.allUnits = units;
+    }
+
+    removeUnit(unit: Unit) {
+        this.allUnits = this.allUnits.filter(u => u !== unit);
     }
 
     setMapSize(width: number, height: number) {
@@ -115,12 +121,24 @@ export class TurnManager {
     }
 
     private runEnemyAI(enemy: HumanUnit) {
-        // Simple Chase AI
-        const dist = Math.abs(enemy.gx - this.player.gx) + Math.abs(enemy.gy - this.player.gy);
-        
-        if (dist <= CHASE_RANGE) {
-            const move = this.findChaseMove(enemy);
-            if (move && enemy.consumeMove()) {
+        EnemyAI.run(
+            enemy,
+            this.player,
+            this.unitMap,
+            this.mapWidth,
+            this.mapHeight,
+            // onAttack
+            () => {
+                if (this.onEnemyAttack) {
+                    this.onEnemyAttack(enemy, () => {
+                        this.nextTurn();
+                    });
+                } else {
+                    this.nextTurn();
+                }
+            },
+            // onMove
+            (move) => {
                 // Update map tracking
                 const oldKey = `${enemy.gx},${enemy.gy}`;
                 const newKey = `${move.toGx},${move.toGy}`;
@@ -137,50 +155,12 @@ export class TurnManager {
                 } else {
                     this.nextTurn();
                 }
-                return;
+            },
+            // onPass
+            () => {
+                this.nextTurn();
             }
-        }
-        
-        enemy.ap -= 10; // Penalty for passing/idle
-        this.nextTurn();
-    }
-
-    private findChaseMove(enemy: HumanUnit): MoveAction | null {
-        const directions = [
-            { dx: 0, dy: -1 }, { dx: 0, dy: 1 },
-            { dx: -1, dy: 0 }, { dx: 1, dy: 0 },
-        ];
-
-        let bestMove: MoveAction | null = null;
-        let bestDist = Math.abs(enemy.gx - this.player.gx) + Math.abs(enemy.gy - this.player.gy);
-
-        // Randomize directions for variety
-        directions.sort(() => Math.random() - 0.5);
-
-        for (const dir of directions) {
-            const nx = enemy.gx + dir.dx;
-            const ny = enemy.gy + dir.dy;
-            const key = `${nx},${ny}`;
-
-            // Check map bounds
-            if (nx < 0 || nx >= this.mapWidth || ny < 0 || ny >= this.mapHeight) continue;
-
-            if (this.unitMap.has(key)) continue;
-
-            const dist = Math.abs(nx - this.player.gx) + Math.abs(ny - this.player.gy);
-            if (dist > 0 && dist < bestDist) {
-                bestDist = dist;
-                bestMove = {
-                    unit: enemy,
-                    fromGx: enemy.gx,
-                    fromGy: enemy.gy,
-                    toGx: nx,
-                    toGy: ny,
-                };
-            }
-        }
-
-        return bestMove;
+        );
     }
 
     private checkPlayerStuck(): boolean {

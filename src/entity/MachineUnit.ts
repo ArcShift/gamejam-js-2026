@@ -2,6 +2,7 @@ import { IUnit } from "./Unit";
 
 interface IMachine extends IUnit {
     cost: number;//scrap metal cost to build
+    activeSkill?: string;
 }
 
 const machineUnits: IMachine[] = [
@@ -9,46 +10,47 @@ const machineUnits: IMachine[] = [
         name: "Sentinel",
         description: "Sentinel. range attack",
         maxHp: 100,
-        attack: 10,
         defense: 5,
         speed: 5,
         cost: 50,
+        weapon: ['assault_rifle', 'knife']
     },
     {
         name: "Heavy",
         description: "Heavy. melee attack",
         maxHp: 200,
-        attack: 20,
         defense: 5,
         speed: 10,
         cost: 50,
+        weapon: ['knife']
     },
     {
         name: "Drone",  
         description: "Drone. unaffect by terrain", 
         maxHp: 100,
-        attack: 10,
         defense: 5,
         speed: 10,
         cost: 30,
+        weapon: ['knife']
     },
     {
         name: "Bombard",
         description: "Bombard. long range attack",
         maxHp: 100,
-        attack: 10,
         defense: 10,
         speed: 10,
         cost: 100,
+        weapon: ['rocket']
     },
     {
         name: "Fixer",
         description: "Have fixing skill",
         maxHp: 100,
-        attack: 10,
         defense: 10,
         speed: 10,
         cost: 30,
+        weapon: ['knife'],
+        activeSkill: "fix"
     },
 ]
 export interface SinBuff {
