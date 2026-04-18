@@ -12,13 +12,11 @@ export class MachineUnit extends Unit {
     sprite: Phaser.GameObjects.Sprite;
 
     constructor(scene: Scene, template: IMachine, faction: Faction) {
-        super(template.name, template.description, template.maxHp, template.defense, template.speed, UnitType.Machine, template.weapon, faction);
+        super(template.name, template.description, template.maxHp, template.defense, template.speed, UnitType.Machine, template.weapon, faction, template.skills);
         
         this.ap = 90; // Start with 90 AP as requested
         
         this.container = scene.add.container(0, 0);
-        
-        const baseColor = faction === Faction.Player ? 0x00ff88 : 0xff4444;
         
         const visualContainer = scene.add.container(0, 0);
         
@@ -68,7 +66,8 @@ export const machineUnits: IMachine[] = [
         cost: 30,
         weapon: ['assault_rifle', 'knife'],
         faction: Faction.Player,
-        spriteIndex: [0, 1, 2]
+        spriteIndex: [0, 1, 2],
+        skills: ['consume-brain'],
     },  
     {
         name: "Heavy",
@@ -79,7 +78,8 @@ export const machineUnits: IMachine[] = [
         cost: 50,
         weapon: ['knife'],
         faction: Faction.Player,
-        spriteIndex: [3, 4, 5]
+        spriteIndex: [3, 4, 5],
+        skills: ['consume-brain'],
     },
     {
         name: "Drone",  
@@ -90,6 +90,7 @@ export const machineUnits: IMachine[] = [
         cost: 20,
         weapon: ['knife'],
         faction: Faction.Player,
-        spriteIndex: [6, 7, 8]
+        spriteIndex: [6, 7, 8],
+        skills: ['consume-brain'],
     }
 ];

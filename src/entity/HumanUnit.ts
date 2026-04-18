@@ -10,7 +10,7 @@ export class HumanUnit extends Unit implements IHumanUnit {
     container: Phaser.GameObjects.Container;
 
     constructor(scene: Scene, config: IHumanUnit) {
-        super(config.name, config.description, config.maxHp, config.defense, config.speed, UnitType.Human, config.weapon, config.faction);
+        super(config.name, config.description, config.maxHp, config.defense, config.speed, UnitType.Human, config.weapon, config.faction, config.skills);
         this.faction = config.faction;
         
         this.container = scene.add.container(0, 0);
@@ -96,7 +96,8 @@ export const humans: IHumanUnit[] = [{
         defense: 3,
         speed: 10,
         faction: Faction.Evil,
-        weapon: ['knife']
+        weapon: ['knife'],
+        skills: [],
     }, {
         name: "Mercenary",
         description: "Mercenary. usually use range attack",
@@ -104,7 +105,8 @@ export const humans: IHumanUnit[] = [{
         defense: 3,
         speed: 10,
         faction: Faction.Evil,
-        weapon: ['assault_rifle', 'knife']
+        weapon: ['assault_rifle', 'knife'],
+        skills: [],
     }, {
         name: "Tyrant",
         description: "Tyrant. Spawn other unit",
@@ -112,7 +114,8 @@ export const humans: IHumanUnit[] = [{
         defense: 3,
         speed: 5,
         faction: Faction.Evil,
-        weapon: []
+        weapon: [],
+        skills: ['spawn-thug'],
     }
     // good human implement later
 ];
