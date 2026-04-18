@@ -8,26 +8,13 @@ export class Scrap {
         this.value = value;
         this.container = scene.add.container(0, 0);
         
-        const baseSize = 32;
+        // Use a random frame from the 6x3 scrap-metal spritesheet (18 frames total)
+        const frameIndex = Math.floor(Math.random() * 18);
+        const sprite = scene.add.sprite(0, 0, 'scrap-metal', frameIndex);
         
-        // Random metallic colors
-        const colors = [0x7f8c8d, 0x95a5a6, 0xbdc3c7, 0x34495e];
-        const rustColor = 0xa0522d;
-        
-        // Create a cluster of jagged shapes for a "scrap" look
-        for (let i = 0; i < 4; i++) {
-            const w = Math.random() * 20 + 10;
-            const h = Math.random() * 20 + 10;
-            const x = Math.random() * 16 - 8;
-            const y = Math.random() * 16 - 8;
-            const angle = Math.random() * 360;
-            const color = Math.random() > 0.3 ? colors[Math.floor(Math.random() * colors.length)] : rustColor;
-            
-            const part = scene.add.rectangle(x, y, w, h, color);
-            part.setAngle(angle);
-            part.setStrokeStyle(1, 0x2c3e50, 0.5);
-            this.container.add(part);
-        }
+        // The frame is 100x100, so scale it to fit nicely within the cell
+        sprite.setScale(0.5);
+        this.container.add(sprite);
 
         // Add a small GLINT effect
         const glint = scene.add.rectangle(0, 0, 4, 15, 0xffffff, 0.6);
