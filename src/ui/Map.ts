@@ -5,8 +5,11 @@ export class Map extends GameObjects.Container {
     private cellSize: number = 64;
     private gap: number = 4;
 
+    public activeMission: ICampaign;
+
     constructor(scene: Scene, x: number, y: number, campaign: ICampaign) {
         super(scene, x, y);
+        this.activeMission = campaign;
 
         const totalCellSize = this.cellSize + this.gap;
         const gridWidth = campaign.map_width * totalCellSize - this.gap;

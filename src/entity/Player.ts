@@ -1,5 +1,5 @@
 import { Scene } from 'phaser';
-import { Unit, UnitType } from './Unit';
+import { Unit, UnitType, Faction } from './Unit';
 
 export class Player extends Unit {
     container: Phaser.GameObjects.Container;
@@ -7,7 +7,7 @@ export class Player extends Unit {
     scrap: number = 0;
 
     constructor(scene: Scene) {
-        super("CORE-01", "Tecnomancer.", 100, 5, 15, UnitType.Machine, ['assault_rifle', 'knife']);
+        super("CORE-01", "Tecnomancer.", 100, 5, 20, UnitType.Machine, ['assault_rifle', 'knife'], Faction.Player);
         this.container = scene.add.container(0, 0);
         
         const size = 48; // A bit smaller than the 64px cell

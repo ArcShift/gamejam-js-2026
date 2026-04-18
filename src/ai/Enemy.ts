@@ -1,35 +1,40 @@
-import { HumanUnit } from '../entity/HumanUnit';
-import { Player } from '../entity/Player';
+import { Unit } from '../entity/Unit';
 import { MoveAction } from '../system/TurnManager';
 
-const CHASE_RANGE = 5;
+const CHASE_RANGE = 8;
 
 export class EnemyAI {
     static run(
-        enemy: HumanUnit, 
-        player: Player, 
+        self: Unit, 
         unitMap: Map<string, any>, 
         mapWidth: number, 
         mapHeight: number,
-        onAttack: () => void,
+        onAttack: (target: Unit) => void,
         onMove: (move: MoveAction) => void,
         onPass: () => void
     ) {
-        const dist = Math.abs(enemy.gx - player.gx) + Math.abs(enemy.gy - player.gy);
+        // Find nearest enemy (different faction)
+        const target = this.findNearestEnemy(self, unitMap);
+        
+        if (!target) {
+            self.ap -= 10;
+            onPass();
+            return;
+        }
+
+        const dist = Math.abs(self.gx - target.gx) + Math.abs(self.gy - target.gy);
         
         // 1. Try to attack if in range
-        if (enemy.equippedWeapons && enemy.equippedWeapons.length > 0) {
-            // Sort weapons by range descending to prefer ranged over melee
-            // Keep track of original indices for the attack method
-            const weaponsByRange = enemy.equippedWeapons
+        if (self.equippedWeapons && self.equippedWeapons.length > 0) {
+            const weaponsByRange = self.equippedWeapons
                 .map((w, index) => ({ weapon: w, index }))
                 .sort((a, b) => b.weapon.range - a.weapon.range);
 
             for (const item of weaponsByRange) {
                 const weapon = item.weapon;
-                if (dist <= weapon.range && enemy.ap >= weapon.apCost && weapon.currentAmmo > 0) {
-                    enemy.attack(player, item.index);
-                    onAttack();
+                if (dist <= weapon.range && self.ap >= weapon.apCost && weapon.currentAmmo > 0) {
+                    self.attack(target, item.index);
+                    onAttack(target);
                     return;
                 }
             }
@@ -37,20 +42,36 @@ export class EnemyAI {
 
         // 2. Simple Chase AI
         if (dist <= CHASE_RANGE) {
-            const move = this.findChaseMove(enemy, player, unitMap, mapWidth, mapHeight);
-            if (move && enemy.consumeMove()) {
+            const move = this.findChaseMove(self, target, unitMap, mapWidth, mapHeight);
+            if (move && self.consumeMove()) {
                 onMove(move);
                 return;
             }
         }
         
-        enemy.ap -= 10; // Penalty for passing/idle
+        self.ap -= 10; // Penalty for passing/idle
         onPass();
     }
 
+    private static findNearestEnemy(self: Unit, unitMap: Map<string, any>): Unit | null {
+        let nearest: Unit | null = null;
+        let minDist = Infinity;
+
+        for (const unit of unitMap.values()) {
+            if (unit.faction !== self.faction && !unit.isDead()) {
+                const dist = Math.abs(self.gx - unit.gx) + Math.abs(self.gy - unit.gy);
+                if (dist < minDist) {
+                    minDist = dist;
+                    nearest = unit;
+                }
+            }
+        }
+        return nearest;
+    }
+
     private static findChaseMove(
-        enemy: HumanUnit, 
-        player: Player, 
+        self: Unit, 
+        target: Unit, 
         unitMap: Map<string, any>, 
         mapWidth: number, 
         mapHeight: number
@@ -61,28 +82,25 @@ export class EnemyAI {
         ];
 
         let bestMove: MoveAction | null = null;
-        let bestDist = Math.abs(enemy.gx - player.gx) + Math.abs(enemy.gy - player.gy);
+        let bestDist = Math.abs(self.gx - target.gx) + Math.abs(self.gy - target.gy);
 
-        // Randomize directions for variety
         directions.sort(() => Math.random() - 0.5);
 
         for (const dir of directions) {
-            const nx = enemy.gx + dir.dx;
-            const ny = enemy.gy + dir.dy;
+            const nx = self.gx + dir.dx;
+            const ny = self.gy + dir.dy;
             const key = `${nx},${ny}`;
 
-            // Check map bounds
             if (nx < 0 || nx >= mapWidth || ny < 0 || ny >= mapHeight) continue;
-
             if (unitMap.has(key)) continue;
 
-            const dist = Math.abs(nx - player.gx) + Math.abs(ny - player.gy);
+            const dist = Math.abs(nx - target.gx) + Math.abs(ny - target.gy);
             if (dist > 0 && dist < bestDist) {
                 bestDist = dist;
                 bestMove = {
-                    unit: enemy,
-                    fromGx: enemy.gx,
-                    fromGy: enemy.gy,
+                    unit: self,
+                    fromGx: self.gx,
+                    fromGy: self.gy,
                     toGx: nx,
                     toGy: ny,
                 };

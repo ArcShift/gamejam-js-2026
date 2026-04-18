@@ -28,6 +28,13 @@ export class Sidebar extends GameObjects.Container {
     private switchWeaponBtnText: GameObjects.Text;
     private switchWeaponBtnBg: GameObjects.Rectangle;
 
+    private summonBtn: GameObjects.Container;
+    private summonBtnText: GameObjects.Text;
+    private summonBtnBg: GameObjects.Rectangle;
+
+    private summonPanel: GameObjects.Container;
+    private machineButtons: GameObjects.Container[] = [];
+
     constructor(scene: Scene, x: number, y: number, width: number, height: number) {
         super(scene, x, y);
         
@@ -68,6 +75,12 @@ export class Sidebar extends GameObjects.Container {
 
         // Switch Weapon Button (hidden by default)
         this.createSwitchWeaponButton(scene, width / 2, 470);
+
+        // Summon Button (hidden by default)
+        this.createSummonButton(scene, width / 2, 520);
+
+        // Summon Panel (hidden by default)
+        this.createSummonPanel(scene, width, height);
 
         // Add the container to the scene
         scene.add.existing(this);
@@ -133,7 +146,7 @@ export class Sidebar extends GameObjects.Container {
     }
 
     public updateAP(ap: number, turn: number, activeUnitName: string) {
-        this.turnText.setText(`TURN: ${turn}`);
+        this.turnText.setText(`TICK: ${turn}`);
         this.apValueText.setText(`${ap} / 100`);
 
         // Update active unit text
@@ -186,8 +199,8 @@ export class Sidebar extends GameObjects.Container {
             fontSize: '11px',
             fontFamily: 'Orbitron',
             color: '#00ccff',
-            alpha: 0.7
         });
+        weaponTitle.setAlpha(0.7);
 
         this.weaponContainer = scene.add.container(0, 125);
 
@@ -252,6 +265,13 @@ export class Sidebar extends GameObjects.Container {
                 this.showSwitchWeaponButton(false);
             }
             
+            // Show summon button if player
+            if (unit.name === 'CORE-01') {
+                this.showSummonButton(true, 30); // Hardcoded cost for Sentinel for now
+            } else {
+                this.showSummonButton(false);
+            }
+            
             this.unitInfo.desc.setText(unit.description);
         } else {
             this.unitInfo.name.setText('NONE');
@@ -287,6 +307,12 @@ export class Sidebar extends GameObjects.Container {
         if (!unit || unit.name !== 'CORE-01' || unit.equippedWeapons.length <= 1) {
             this.showSwitchWeaponButton(false);
         }
+
+        if (!unit || unit.name !== 'CORE-01') {
+            this.showSummonButton(false);
+            this.summonPanel.setVisible(false);
+            this.detailsContainer.setVisible(true);
+        }
     }
 
     public showCollectButton(visible: boolean, cost: number = 0) {
@@ -305,6 +331,48 @@ export class Sidebar extends GameObjects.Container {
 
     public showSwitchWeaponButton(visible: boolean) {
         this.switchWeaponBtn.setVisible(visible);
+    }
+
+    public showSummonButton(visible: boolean, cost: number = 0) {
+        this.summonBtn.setVisible(visible);
+    }
+
+    public openSummonPanel(machines: any[], currentScrap: number) {
+        this.detailsContainer.setVisible(false);
+        this.summonPanel.setVisible(true);
+        this.showSummonButton(false);
+        this.showAttackButton(false);
+        this.showCollectButton(false);
+        this.showSwitchWeaponButton(false);
+
+        // Update buttons state
+        this.machineButtons.forEach((btn: any, index) => {
+            const machine = machines[index];
+            const canAfford = currentScrap >= machine.cost;
+            const bg = btn.getAt(0) as GameObjects.Rectangle;
+            const txt = btn.getAt(1) as GameObjects.Text;
+            const costTxt = btn.getAt(2) as GameObjects.Text;
+
+            if (canAfford) {
+                bg.setAlpha(0.2);
+                bg.setStrokeStyle(2, 0x00ff88);
+                txt.setColor('#ffffff');
+                costTxt.setColor('#00ff88');
+                bg.setInteractive();
+            } else {
+                bg.setAlpha(0.05);
+                bg.setStrokeStyle(1, 0x444444);
+                txt.setColor('#444444');
+                costTxt.setColor('#444444');
+                bg.disableInteractive();
+            }
+        });
+    }
+
+    public closeSummonPanel() {
+        this.summonPanel.setVisible(false);
+        this.detailsContainer.setVisible(true);
+        this.showSummonButton(true);
     }
 
     private createCollectButton(scene: Scene, x: number, y: number) {
@@ -394,6 +462,95 @@ export class Sidebar extends GameObjects.Container {
 
         this.switchWeaponBtnBg.on('pointerdown', () => {
             this.scene.events.emit('switch-weapon-request');
+        });
+    }
+
+    private createSummonButton(scene: Scene, x: number, y: number) {
+        this.summonBtn = scene.add.container(x, y);
+        this.summonBtnBg = scene.add.rectangle(0, 0, 200, 45, 0x00ff88, 0.2);
+        this.summonBtnBg.setStrokeStyle(2, 0x00ff88);
+        
+        this.summonBtnText = scene.add.text(0, 0, 'CONSTRUCT MACHINE', {
+            fontSize: '14px',
+            fontFamily: 'Orbitron',
+            color: '#ffffff'
+        }).setOrigin(0.5);
+
+        this.summonBtn.add([this.summonBtnBg, this.summonBtnText]);
+        this.add(this.summonBtn);
+
+        this.summonBtnBg.setInteractive({ useHandCursor: true });
+        this.summonBtn.setVisible(false);
+
+        this.summonBtnBg.on('pointerover', () => {
+            this.summonBtnBg.setFillStyle(0x00ff88, 0.4);
+        });
+
+        this.summonBtnBg.on('pointerout', () => {
+            this.summonBtnBg.setFillStyle(0x00ff88, 0.2);
+        });
+
+        this.summonBtnBg.on('pointerdown', () => {
+            this.scene.events.emit('open-summon-panel-request');
+        });
+    }
+
+    private createSummonPanel(scene: Scene, width: number, height: number) {
+        this.summonPanel = scene.add.container(0, 140);
+        this.add(this.summonPanel);
+        this.summonPanel.setVisible(false);
+
+        const title = scene.add.text(20, 0, 'SELECT MACHINE', {
+            fontSize: '14px',
+            fontFamily: 'Orbitron',
+            color: '#00ff88'
+        });
+        this.summonPanel.add(title);
+
+        // Load machine data (will be passed from Game.ts but we need to create placeholders)
+        // We will create 3 buttons for now
+        const machineNames = ["SENTINEL", "HEAVY", "DRONE"];
+        const machineCosts = [30, 50, 20];
+
+        machineNames.forEach((name, i) => {
+            const btn = scene.add.container(width / 2, 40 + i * 55);
+            const bg = scene.add.rectangle(0, 0, 200, 45, 0x00ff88, 0.2);
+            bg.setStrokeStyle(2, 0x00ff88);
+            
+            const txt = scene.add.text(-90, 0, name, {
+                fontSize: '14px',
+                fontFamily: 'Orbitron',
+                color: '#ffffff'
+            }).setOrigin(0, 0.5);
+
+            const costTxt = scene.add.text(90, 0, `${machineCosts[i]} S`, {
+                fontSize: '13px',
+                fontFamily: 'monospace',
+                color: '#00ff88'
+            }).setOrigin(1, 0.5);
+
+            btn.add([bg, txt, costTxt]);
+            this.summonPanel.add(btn);
+            this.machineButtons.push(btn);
+
+            bg.on('pointerover', () => bg.setFillStyle(0x00ff88, 0.4));
+            bg.on('pointerout', () => bg.setFillStyle(0x00ff88, 0.2));
+            bg.on('pointerdown', () => {
+                this.scene.events.emit('select-machine-to-summon', i);
+            });
+        });
+
+        // Cancel Button
+        const cancelBtn = scene.add.container(width / 2, 230);
+        const cancelBg = scene.add.rectangle(0, 0, 200, 45, 0xff4444, 0.1);
+        cancelBg.setStrokeStyle(1, 0xff4444);
+        const cancelTxt = scene.add.text(0, 0, 'CANCEL', { fontSize: '14px', color: '#ff4444' }).setOrigin(0.5);
+        cancelBtn.add([cancelBg, cancelTxt]);
+        this.summonPanel.add(cancelBtn);
+
+        cancelBg.setInteractive({ useHandCursor: true });
+        cancelBg.on('pointerdown', () => {
+            this.scene.events.emit('cancel-summon-request');
         });
     }
 

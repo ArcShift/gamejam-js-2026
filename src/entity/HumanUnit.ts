@@ -1,22 +1,16 @@
 import { Scene } from 'phaser';
-import { IUnit, Unit, UnitType } from "./Unit";
-
-export enum HumanFaction {
-    Evil,
-    Neutral,
-    Good
-}
+import { IUnit, Unit, UnitType, Faction } from "./Unit";
 
 export interface IHumanUnit extends IUnit {
-    faction: HumanFaction;
+    faction: Faction;
 }
 
 export class HumanUnit extends Unit implements IHumanUnit {
-    faction: HumanFaction;
+    faction: Faction;
     container: Phaser.GameObjects.Container;
 
     constructor(scene: Scene, config: IHumanUnit) {
-        super(config.name, config.description, config.maxHp, config.defense, config.speed, UnitType.Human, config.weapon);
+        super(config.name, config.description, config.maxHp, config.defense, config.speed, UnitType.Human, config.weapon, config.faction);
         this.faction = config.faction;
         
         this.container = scene.add.container(0, 0);
@@ -101,7 +95,7 @@ export const humans: IHumanUnit[] = [{
         maxHp: 100,
         defense: 3,
         speed: 10,
-        faction: HumanFaction.Evil,
+        faction: Faction.Evil,
         weapon: ['knife']
     }, {
         name: "Mercenary",
@@ -109,7 +103,7 @@ export const humans: IHumanUnit[] = [{
         maxHp: 100,
         defense: 3,
         speed: 10,
-        faction: HumanFaction.Evil,
+        faction: Faction.Evil,
         weapon: ['assault_rifle', 'knife']
     }, {
         name: "Tyrant",
@@ -117,7 +111,7 @@ export const humans: IHumanUnit[] = [{
         maxHp: 100,
         defense: 3,
         speed: 5,
-        faction: HumanFaction.Evil,
+        faction: Faction.Evil,
         weapon: []
     }
     // good human implement later

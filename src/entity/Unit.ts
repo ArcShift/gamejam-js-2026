@@ -7,6 +7,14 @@ export interface IUnit {
     defense: number;
     speed: number;
     weapon: string[];
+    faction: Faction;
+}
+
+export enum Faction {
+    Evil,
+    Neutral,
+    Good,
+    Player
 }
 
 export const AP_MOVE_COST = 25;
@@ -24,6 +32,7 @@ export class Unit implements IUnit {
     speed: number;
     type: UnitType;
     weapon: string[];
+    faction: Faction;
     equippedWeapons: Weapon[];
     gx: number = 0;
     gy: number = 0;
@@ -32,7 +41,7 @@ export class Unit implements IUnit {
     ap: number = 0;
     selectedWeaponIndex: number = 0;
 
-    constructor(name: string, description: string, maxHp: number, defense: number, speed: number, type: UnitType, weapon: string[]) {
+    constructor(name: string, description: string, maxHp: number, defense: number, speed: number, type: UnitType, weapon: string[], faction: Faction) {
         this.name = name;
         this.description = description;
         this.maxHp = maxHp;
@@ -41,6 +50,7 @@ export class Unit implements IUnit {
         this.speed = speed;
         this.type = type;
         this.weapon = weapon;
+        this.faction = faction;
         this.equippedWeapons = weapon.map(w => new Weapon(w));
     }
 

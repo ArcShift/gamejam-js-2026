@@ -1,5 +1,4 @@
 import { Unit, AP_ACT_THRESHOLD } from '../entity/Unit';
-import { HumanUnit } from '../entity/HumanUnit';
 import { Player } from '../entity/Player';
 import { EnemyAI } from '../ai/Enemy';
 
@@ -33,7 +32,7 @@ export class TurnManager {
 
     // Callbacks
     onEnemyMove: ((action: MoveAction, onComplete: () => void) => void) | null = null;
-    onEnemyAttack: ((enemy: HumanUnit, onComplete: () => void) => void) | null = null;
+    onUnitAttack: ((attacker: Unit, target: Unit, onComplete: () => void) => void) | null = null;
     onTurnTick: (() => void) | null = null;
     onPlayerTurnStart: (() => void) | null = null;
     onLose: (() => void) | null = null;
@@ -82,9 +81,10 @@ export class TurnManager {
             }
             this.state = SystemState.IDLE;
             if (this.onPlayerTurnStart) this.onPlayerTurnStart();
-        } else if (this.currentUnit instanceof HumanUnit) {
+        } else {
+            // All other units use AI
             this.state = SystemState.PROCESSING;
-            this.runEnemyAI(this.currentUnit);
+            this.runUnitAI(this.currentUnit);
         }
     }
 
@@ -120,17 +120,16 @@ export class TurnManager {
         return true;
     }
 
-    private runEnemyAI(enemy: HumanUnit) {
+    private runUnitAI(unit: Unit) {
         EnemyAI.run(
-            enemy,
-            this.player,
+            unit,
             this.unitMap,
             this.mapWidth,
             this.mapHeight,
             // onAttack
-            () => {
-                if (this.onEnemyAttack) {
-                    this.onEnemyAttack(enemy, () => {
+            (target) => {
+                if (this.onUnitAttack) {
+                    this.onUnitAttack(unit, target, () => {
                         this.nextTurn();
                     });
                 } else {
@@ -140,13 +139,13 @@ export class TurnManager {
             // onMove
             (move) => {
                 // Update map tracking
-                const oldKey = `${enemy.gx},${enemy.gy}`;
+                const oldKey = `${unit.gx},${unit.gy}`;
                 const newKey = `${move.toGx},${move.toGy}`;
 
                 this.unitMap.delete(oldKey);
-                enemy.gx = move.toGx;
-                enemy.gy = move.toGy;
-                this.unitMap.set(newKey, enemy);
+                unit.gx = move.toGx;
+                unit.gy = move.toGy;
+                this.unitMap.set(newKey, unit);
 
                 if (this.onEnemyMove) {
                     this.onEnemyMove(move, () => {

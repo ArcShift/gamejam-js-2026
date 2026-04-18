@@ -5,8 +5,9 @@ import { GManager } from '../system/GameManager';
 import { Player } from '../entity/Player';
 import { Scrap } from '../entity/Scrap';
 import { HumanUnit, humans } from '../entity/HumanUnit';
+import { MachineUnit, machineUnits } from '../entity/MachineUnit';
 import { TurnManager, SystemState } from '../system/TurnManager';
-import { Unit, UnitType } from '../entity/Unit';
+import { Unit, UnitType, Faction } from '../entity/Unit';
 
 export class Game extends Scene
 {
@@ -23,6 +24,9 @@ export class Game extends Scene
 
     // Turn system
     turnManager: TurnManager;
+    private isSummoning: boolean = false;
+    private selectedMachineIndex: number = -1;
+    private summonIndicators: Phaser.GameObjects.Container[] = [];
 
     // Grid constants
     private cellSize = 64;
@@ -123,7 +127,7 @@ export class Game extends Scene
                 const gy = Math.floor((worldY - this.mapOffsetY) / this.totalCellSize);
 
                 // Check bounds
-                if (gx >= 0 && gx < activeMission.map_width && gy >= 0 && gy < activeMission.map_height) {
+                if (gx >= 0 && gx < this.gameMap.activeMission.map_width && gy >= 0 && gy < this.gameMap.activeMission.map_height) {
                     const isSameCell = this.selectedGx === gx && this.selectedGy === gy;
                     const isAdjacent = Math.abs(gx - this.player.gx) + Math.abs(gy - this.player.gy) === 1;
 
@@ -275,8 +279,8 @@ export class Game extends Scene
             
             // Create and position Player in a random grid cell
             this.player = new Player(this);
-            const pgx = Math.floor(Math.random() * activeMission.map_width);
-            const pgy = Math.floor(Math.random() * activeMission.map_height);
+            const pgx = Math.floor(Math.random() * this.gameMap.activeMission.map_width);
+            const pgy = Math.floor(Math.random() * this.gameMap.activeMission.map_height);
             
             const px = this.mapOffsetX + pgx * this.totalCellSize + this.cellSize / 2;
             const py = this.mapOffsetY + pgy * this.totalCellSize + this.cellSize / 2;
@@ -298,8 +302,8 @@ export class Game extends Scene
             const allCells: {gx: number, gy: number}[] = [];
             const availableUnitCells: {gx: number, gy: number}[] = [];
 
-            for (let y = 0; y < activeMission.map_height; y++) {
-                for (let x = 0; x < activeMission.map_width; x++) {
+            for (let y = 0; y < this.gameMap.activeMission.map_height; y++) {
+                for (let x = 0; x < this.gameMap.activeMission.map_width; x++) {
                     const cell = { gx: x, gy: y };
                     allCells.push(cell);
                     // Units (other than player) should not spawn on the player's starting cell
@@ -375,7 +379,7 @@ export class Game extends Scene
             // Initialize Turn Manager
             this.turnManager = new TurnManager(this.player, this.units);
             this.turnManager.registerUnits(allGameUnits);
-            this.turnManager.setMapSize(activeMission.map_width, activeMission.map_height);
+            this.turnManager.setMapSize(this.gameMap.activeMission.map_width, this.gameMap.activeMission.map_height);
 
             // Handle enemy movement animation
             this.turnManager.onEnemyMove = (action, onComplete) => {
@@ -410,45 +414,55 @@ export class Game extends Scene
                 });
             };
 
-            // Handle enemy attack animation
-            this.turnManager.onEnemyAttack = (enemy, onComplete) => {
+            // Handle unit attack animation
+            this.turnManager.onUnitAttack = (attacker, target, onComplete) => {
+                const targetX = this.mapOffsetX + target.gx * this.totalCellSize + this.cellSize / 2;
+                const targetY = this.mapOffsetY + target.gy * this.totalCellSize + this.cellSize / 2;
+                
                 const flashGraphic = this.add.rectangle(
-                    this.mapOffsetX + this.player.gx * this.totalCellSize + this.cellSize / 2,
-                    this.mapOffsetY + this.player.gy * this.totalCellSize + this.cellSize / 2,
+                    targetX, targetY,
                     this.cellSize, this.cellSize, 0xff0000, 0.6
                 );
                 flashGraphic.setDepth(20);
 
-                const enemyFlash = this.add.circle(
-                    this.mapOffsetX + enemy.gx * this.totalCellSize + this.cellSize / 2,
-                    this.mapOffsetY + enemy.gy * this.totalCellSize + this.cellSize / 2,
+                const attackerFlash = this.add.circle(
+                    this.mapOffsetX + attacker.gx * this.totalCellSize + this.cellSize / 2,
+                    this.mapOffsetY + attacker.gy * this.totalCellSize + this.cellSize / 2,
                     20, 0xffffff, 0.8
                 );
-                enemyFlash.setDepth(20);
+                attackerFlash.setDepth(20);
 
                 this.tweens.add({
-                    targets: [flashGraphic, enemyFlash],
+                    targets: [flashGraphic, attackerFlash],
                     alpha: 0,
                     duration: 300,
                     onComplete: () => {
                         flashGraphic.destroy();
-                        enemyFlash.destroy();
+                        attackerFlash.destroy();
 
-                        // Refresh UI if player is selected
-                        if (this.selectedGx === this.player.gx && this.selectedGy === this.player.gy) {
-                            this.events.emit('cell-selected', { 
-                                unit: this.player, 
-                                scrap: this.scrap.get(`${this.player.gx},${this.player.gy}`),
-                                canAttack: false, attackCost: 0
-                            });
+                        if (target.isDead()) {
+                            if (target === this.player) {
+                                this.turnManager.state = SystemState.ANIMATING;
+                                this.scene.start('GameOver', { message: 'CORE COMPROMISED' });
+                                return;
+                            } else {
+                                // Destroy non-player target
+                                const targetKey = `${target.gx},${target.gy}`;
+                                this.units.delete(targetKey);
+                                this.turnManager.removeUnit(target);
+                                // @ts-ignore
+                                if (target.container) target.container.destroy();
+                            }
                         }
 
-                        if (this.player.isDead()) {
-                            this.turnManager.state = SystemState.ANIMATING;
-                            this.scene.start('GameOver', { message: 'CORE COMPROMISED' });
-                        } else {
-                            onComplete();
-                        }
+                        // Refresh UI if needed
+                        this.events.emit('cell-selected', { 
+                            unit: this.player, 
+                            scrap: this.scrap.get(`${this.player.gx},${this.player.gy}`),
+                            canAttack: false, attackCost: 0
+                        });
+
+                        onComplete();
                     }
                 });
             };
@@ -635,6 +649,26 @@ export class Game extends Scene
                 }
             });
 
+            // Handle summon action
+            this.events.on('open-summon-action', () => {
+                if (this.turnManager.state === SystemState.IDLE) {
+                    this.events.emit('summon-panel-opened', {
+                        machines: machineUnits,
+                        scrap: this.player.scrap
+                    });
+                }
+            });
+
+            this.events.on('cancel-summon-action', () => {
+                this.clearSummonIndicators();
+                this.events.emit('summon-panel-closed');
+            });
+
+            this.events.on('select-machine-action', (index: number) => {
+                this.selectedMachineIndex = index;
+                this.showSummonLocationIndicators();
+            });
+
             // START THE LOOP
             this.turnManager.start();
         }
@@ -716,5 +750,97 @@ export class Game extends Scene
                 this.scene.start('Campaign');
             }
         });
+    }
+    private showSummonLocationIndicators() {
+        this.clearSummonIndicators();
+        
+        const neighbors = [
+            { dx: 0, dy: -1 }, { dx: 0, dy: 1 },
+            { dx: -1, dy: 0 }, { dx: 1, dy: 0 }
+        ];
+
+        neighbors.forEach(n => {
+            const nx = this.player.gx + n.dx;
+            const ny = this.player.gy + n.dy;
+            const key = `${nx},${ny}`;
+
+            if (nx >= 0 && nx < this.gameMap.activeMission.map_width && 
+                ny >= 0 && ny < this.gameMap.activeMission.map_height && 
+                !this.units.has(key)) {
+                
+                const x = this.mapOffsetX + nx * this.totalCellSize + this.cellSize / 2;
+                const y = this.mapOffsetY + ny * this.totalCellSize + this.cellSize / 2;
+
+                const indicator = this.add.container(x, y);
+                const bg = this.add.rectangle(0, 0, this.cellSize - 10, this.cellSize - 10, 0x00ff88, 0.3);
+                bg.setStrokeStyle(2, 0x00ff88);
+                
+                const label = this.add.text(0, 0, 'HERE', { fontSize: '10px', color: '#00ff88' }).setOrigin(0.5);
+                
+                indicator.add([bg, label]);
+                indicator.setDepth(15);
+                
+                bg.setInteractive({ useHandCursor: true });
+                bg.on('pointerover', () => bg.setFillStyle(0x00ff88, 0.6));
+                bg.on('pointerout', () => bg.setFillStyle(0x00ff88, 0.3));
+                bg.on('pointerdown', () => {
+                    this.performSummon(nx, ny);
+                });
+
+                this.summonIndicators.push(indicator);
+                
+                // Pulsing animation
+                this.tweens.add({
+                    targets: indicator,
+                    alpha: 0.5,
+                    duration: 500,
+                    yoyo: true,
+                    repeat: -1
+                });
+            }
+        });
+    }
+
+    private clearSummonIndicators() {
+        this.summonIndicators.forEach(ind => ind.destroy());
+        this.summonIndicators = [];
+    }
+
+    private performSummon(gx: number, gy: number) {
+        const template = machineUnits[this.selectedMachineIndex];
+        if (this.player.scrap >= template.cost) {
+            this.player.scrap -= template.cost;
+            
+            const machine = new MachineUnit(this, template, Faction.Player);
+            machine.gx = gx;
+            machine.gy = gy;
+            machine.setPosition(
+                this.mapOffsetX + gx * this.totalCellSize + this.cellSize / 2,
+                this.mapOffsetY + gy * this.totalCellSize + this.cellSize / 2
+            );
+            
+            this.units.set(`${gx},${gy}`, machine);
+            this.turnManager.registerUnits([...this.units.values()]);
+            
+            // Visual feedback
+            this.cameras.main.flash(300, 0, 255, 136);
+            
+            this.clearSummonIndicators();
+            this.events.emit('summon-panel-closed');
+            
+            // Update UI
+            this.events.emit('cell-selected', { 
+                unit: this.player, 
+                scrap: this.scrap.get(`${this.selectedGx},${this.selectedGy}`), 
+                canAttack: false, 
+                attackCost: 0 
+            });
+
+            this.events.emit('ap-updated', {
+                ap: this.player.ap,
+                turn: this.turnManager.turnCount,
+                activeUnitName: this.player.name
+            });
+        }
     }
 }

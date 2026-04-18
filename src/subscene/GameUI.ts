@@ -50,6 +50,28 @@ export class GameUI extends Scene {
             gameScene.events.emit('switch-weapon-action');
         });
 
+        // Forward summon request to Game scene
+        this.events.on('open-summon-panel-request', () => {
+            gameScene.events.emit('open-summon-action');
+        });
+
+        this.events.on('cancel-summon-request', () => {
+            gameScene.events.emit('cancel-summon-action');
+        });
+
+        this.events.on('select-machine-to-summon', (index: number) => {
+            gameScene.events.emit('select-machine-action', index);
+        });
+
+        // Listen for panel open from game
+        gameScene.events.on('summon-panel-opened', (data: { machines: any[], scrap: number }) => {
+            this.sidebar.openSummonPanel(data.machines, data.scrap);
+        });
+
+        gameScene.events.on('summon-panel-closed', () => {
+            this.sidebar.closeSummonPanel();
+        });
+
         // Listen for AP updates from the Game scene
         gameScene.events.on('ap-updated', (data: { ap: number, turn: number, activeUnitName: string }) => {
             this.sidebar.updateAP(data.ap, data.turn, data.activeUnitName);
