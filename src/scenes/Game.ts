@@ -438,8 +438,11 @@ export class Game extends Scene
                         y: targetY,
                         duration: 300,
                         onComplete: () => {
+                            this.units.delete(`${this.player.gx},${this.player.gy}`);
+                            this.player.faceTarget(move.toGx);
                             this.player.gx = move.toGx;
                             this.player.gy = move.toGy;
+                            this.units.set(`${move.toGx},${move.toGy}`, this.player);
                             onComplete();
                         }
                     });

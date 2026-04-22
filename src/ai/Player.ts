@@ -64,7 +64,7 @@ export class PlayerAI {
 
         // 3. Move toward nearest scrap if not full
         if (player.scrap < Player.MAX_SCRAP) {
-            const nearestScrap = this.findNearestScrap(player, scrapMap);
+            const nearestScrap = this.findNearestScrap(player, scrapMap, unitMap);
             if (nearestScrap) {
                 const move = this.findPathMove(player, nearestScrap.gx, nearestScrap.gy, unitMap, mapWidth, mapHeight);
                 if (move) {
@@ -78,12 +78,17 @@ export class PlayerAI {
         onAction({ type: 'pass' });
     }
 
-    private static findNearestScrap(player: Player, scrapMap: Map<string, any>): { gx: number, gy: number } | null {
+    private static findNearestScrap(player: Player, scrapMap: Map<string, any>, unitMap: Map<string, any>): { gx: number, gy: number } | null {
         let nearest: { gx: number, gy: number } | null = null;
         let minDist = Infinity;
 
         for (const [key, scrap] of scrapMap.entries()) {
             const [gx, gy] = key.split(',').map(Number);
+            
+            // Skip if there's a unit there (unless it's the player themselves)
+            const unitAtScrap = unitMap.get(key);
+            if (unitAtScrap && unitAtScrap !== player) continue;
+
             const dist = Math.abs(player.gx - gx) + Math.abs(player.gy - gy);
             
             if (dist < minDist) {
@@ -107,12 +112,12 @@ export class PlayerAI {
             grid[y] = [];
             for (let x = 0; x < mapWidth; x++) {
                 const key = `${x},${y}`;
-                const isOccupied = unitMap.has(key);
-                const isTarget = x === targetGx && y === targetGy;
-                const isSelf = x === self.gx && y === self.gy;
+                const unit = unitMap.get(key);
+                const isSelf = unit === self;
                 
-                // Blocked if there's a unit, UNLESS it's the target or ourselves
-                grid[y][x] = (isOccupied && !isTarget && !isSelf) ? 1 : 0;
+                // Blocked if there's a unit, UNLESS it's ourselves
+                // This ensures we can move to a target cell only if it's empty
+                grid[y][x] = (unit && !isSelf) ? 1 : 0;
             }
         }
 

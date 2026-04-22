@@ -2,7 +2,7 @@ import { Scene, GameObjects } from 'phaser';
 
 export class Sidebar extends GameObjects.Container {
     private detailsContainer: GameObjects.Container;
-    private unitInfo: { name: GameObjects.Text, hp: GameObjects.Text, stats: GameObjects.Text, enhancement: GameObjects.Text, desc: GameObjects.Text, portrait: GameObjects.Sprite };
+    private unitInfo: { name: GameObjects.Text, hp: GameObjects.Text, stats: GameObjects.Text, enhancement: GameObjects.Text, desc: GameObjects.Text };
     private weaponContainer: GameObjects.Container;
     private scrapInfo: { title: GameObjects.Text, value: GameObjects.Text };
     private bg: GameObjects.Rectangle;
@@ -203,7 +203,7 @@ export class Sidebar extends GameObjects.Container {
         // Unit Section
         this.unitTitle = scene.add.text(0, 0, 'UNIT DATA', {
             fontSize: '14px',
-            fontFamily: 'Orbitron',
+            fontFamily: 'Orbitron, Arial Black',
             color: '#00ffff'
         });
         
@@ -213,12 +213,11 @@ export class Sidebar extends GameObjects.Container {
             stats: scene.add.text(0, 75, '', { fontSize: '13px', color: '#aaaaaa' }),
             enhancement: scene.add.text(0, 95, '', { fontSize: '12px', fontFamily: 'Orbitron', color: '#ff00ff' }),
             desc: scene.add.text(0, 150, '', { fontSize: '12px', color: '#888888', wordWrap: { width: width - 40 } }),
-            portrait: scene.add.sprite(width - 60, 40, 'human', 0).setScale(0.8).setVisible(false)
         };
 
         this.weaponTitle = scene.add.text(0, 105, 'WEAPONS', {
             fontSize: '11px',
-            fontFamily: 'Orbitron',
+            fontFamily: 'Orbitron, Arial Black',
             color: '#00ccff',
         });
         this.weaponTitle.setAlpha(0.7);
@@ -245,7 +244,6 @@ export class Sidebar extends GameObjects.Container {
 
         this.detailsContainer.add([
             this.unitTitle, this.unitInfo.name, this.unitInfo.hp, this.unitInfo.stats, this.unitInfo.enhancement, this.weaponTitle, this.weaponContainer, this.unitInfo.desc,
-            this.unitInfo.portrait,
             this.scrapTitle, this.scrapInfo.title, this.scrapInfo.value, this.carriedScrapText
         ]);
     }
@@ -384,15 +382,6 @@ export class Sidebar extends GameObjects.Container {
                 this.unitInfo.enhancement.setVisible(false);
             }
             
-            // Update Portrait
-            if (unit.spriteIndex && unit.spriteIndex.length > 0) {
-                const texture = unit.type === 0 ? 'human' : 'machine'; // 0 is Human, 1 is Machine in UnitType enum
-                this.unitInfo.portrait.setTexture(texture, unit.spriteIndex[0]);
-                this.unitInfo.portrait.setVisible(true);
-            } else {
-                this.unitInfo.portrait.setVisible(false);
-            }
-            
             this.weaponContainer.removeAll(true);
             if (unit.equippedWeapons && unit.equippedWeapons.length > 0) {
                 unit.equippedWeapons.forEach((w: any, index: number) => {
@@ -437,7 +426,6 @@ export class Sidebar extends GameObjects.Container {
             this.unitInfo.stats.setText('');
             this.weaponContainer.removeAll(true);
             this.unitInfo.desc.setText('Select a grid to scan for units.');
-            this.unitInfo.portrait.setVisible(false);
         }
 
         if (scrap) {
