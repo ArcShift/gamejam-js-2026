@@ -23,7 +23,7 @@ export class MachineUnit extends Unit {
         const shadow = scene.add.ellipse(0, 15, 24, 12, 0x000000, 0.3);
         
         this.sprite = scene.add.sprite(0, 0, 'machine', template.spriteIndex[1]);
-        this.sprite.setScale(0.3); // Scale to fit 64x64 cell
+        this.sprite.setScale(0.15); // Scale to fit 64x64 cell
 
         visualContainer.add([shadow, this.sprite]);
         this.container.add(visualContainer);
@@ -65,7 +65,7 @@ export const machineUnits: IMachine[] = [
         cost: 30,
         weapon: ['assault_rifle', 'knife'],
         faction: Faction.Player,
-        spriteIndex: [0, 1, 2],
+        spriteIndex: [0, 3],
         skills: ['consume-brain'],
     },  
     {
@@ -77,7 +77,7 @@ export const machineUnits: IMachine[] = [
         cost: 50,
         weapon: ['knife'],
         faction: Faction.Player,
-        spriteIndex: [3, 4, 5],
+        spriteIndex: [1, 4],
         skills: ['consume-brain'],
     },
     {
@@ -89,7 +89,7 @@ export const machineUnits: IMachine[] = [
         cost: 20,
         weapon: ['knife'],
         faction: Faction.Player,
-        spriteIndex: [6, 7, 8],
+        spriteIndex: [2, 5],
         skills: ['consume-brain'],
     }
 ];

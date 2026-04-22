@@ -48,12 +48,12 @@ export class Sidebar extends GameObjects.Container {
 
     constructor(scene: Scene, x: number, y: number, width: number, height: number) {
         super(scene, x, y);
-        
+
         // Background for the sidebar
         this.bg = scene.add.rectangle(0, 0, width, height, 0x111111, 0.95);
         this.bg.setOrigin(0, 0);
         this.bg.setStrokeStyle(1, 0x333333);
-        
+
         this.add(this.bg);
 
         // Header Title
@@ -94,7 +94,7 @@ export class Sidebar extends GameObjects.Container {
 
         // Summon Panel (hidden by default)
         this.createSummonPanel(scene, width, height);
-        
+
         // Auto Button
         this.createAutoButton(scene, width - 60, 25);
 
@@ -197,16 +197,17 @@ export class Sidebar extends GameObjects.Container {
     }
 
     private createDetailsPanel(scene: Scene, width: number, _height?: number) {
+        const y = 0;
         this.detailsContainer = scene.add.container(20, 140);
         this.add(this.detailsContainer);
 
         // Unit Section
-        this.unitTitle = scene.add.text(0, 0, 'UNIT DATA', {
+        this.unitTitle = scene.add.text(0, y, 'UNIT DATA', {
             fontSize: '14px',
-            fontFamily: 'Orbitron, Arial Black',
+            fontFamily: 'Arial Black',
             color: '#00ffff'
         });
-        
+
         this.unitInfo = {
             name: scene.add.text(0, 25, 'No Unit Selected', { fontSize: '18px', color: '#ffffff' }),
             hp: scene.add.text(0, 50, '', { fontSize: '13px', color: '#ff5555' }), // Smaller font for row
@@ -217,7 +218,7 @@ export class Sidebar extends GameObjects.Container {
 
         this.weaponTitle = scene.add.text(0, 105, 'WEAPONS', {
             fontSize: '11px',
-            fontFamily: 'Orbitron, Arial Black',
+            fontFamily: 'Arial Black',
             color: '#00ccff',
         });
         this.weaponTitle.setAlpha(0.7);
@@ -250,18 +251,18 @@ export class Sidebar extends GameObjects.Container {
 
     private layoutDetails() {
         let currentY = 0;
-        
+
         // Unit Section
         this.unitTitle.y = currentY;
         currentY += 22;
-        
+
         this.unitInfo.name.y = currentY;
         currentY += 24;
-        
+
         // Stats Row 1: HP & AP
         this.unitInfo.hp.y = currentY;
         currentY += 20;
-        
+
         // Stats Row 2: DEF & SPD
         this.unitInfo.stats.y = currentY;
         currentY += 20;
@@ -278,7 +279,7 @@ export class Sidebar extends GameObjects.Container {
             this.weaponTitle.y = currentY;
             currentY += 18;
             this.weaponContainer.y = currentY;
-            
+
             // Calculate height of weapons
             const weaponCount = this.weaponContainer.length;
             currentY += (weaponCount * 18) + 10;
@@ -300,10 +301,10 @@ export class Sidebar extends GameObjects.Container {
             this.scrapTitle.setVisible(true);
             this.scrapTitle.y = currentY;
             currentY += 22;
-            
+
             this.scrapInfo.title.y = currentY;
             currentY += 22;
-            
+
             this.scrapInfo.value.y = currentY;
             currentY += 20;
 
@@ -330,23 +331,23 @@ export class Sidebar extends GameObjects.Container {
             const smallWidth = 100;
             this.collectBtnBg.setSize(smallWidth, 45);
             this.attackBtnBg.setSize(smallWidth, 45);
-            
+
             this.collectBtn.x = centerX - 55;
             this.attackBtn.x = centerX + 55;
-            
+
             this.collectBtn.y = currentY + 22;
             this.attackBtn.y = currentY + 22;
-            
+
             currentY += 60;
         } else {
             // Restore size and stack
             const normalWidth = 200;
             this.collectBtnBg.setSize(normalWidth, 45);
             this.attackBtnBg.setSize(normalWidth, 45);
-            
+
             this.collectBtn.x = centerX;
             this.attackBtn.x = centerX;
-            
+
             if (this.collectBtn.visible) {
                 this.collectBtn.y = currentY + 22;
                 currentY += 50;
@@ -373,7 +374,7 @@ export class Sidebar extends GameObjects.Container {
             this.unitInfo.name.setText(unit.name.toUpperCase());
             this.unitInfo.hp.setText(`HP: ${unit.hp}/${unit.maxHp}  |  AP: ${Math.floor(unit.ap)}`);
             this.unitInfo.stats.setText(`DEF: ${unit.defense}  |  SPD: ${unit.speed}`);
-            
+
             if (unit.enhancement) {
                 this.unitInfo.enhancement.setText(`ENHANCED: ${unit.enhancement.toUpperCase()}`);
                 this.unitInfo.enhancement.setVisible(true);
@@ -381,44 +382,44 @@ export class Sidebar extends GameObjects.Container {
                 this.unitInfo.enhancement.setText('');
                 this.unitInfo.enhancement.setVisible(false);
             }
-            
+
             this.weaponContainer.removeAll(true);
             if (unit.equippedWeapons && unit.equippedWeapons.length > 0) {
                 unit.equippedWeapons.forEach((w: any, index: number) => {
                     const isActive = index === unit.selectedWeaponIndex;
                     const color = isActive ? '#00ffff' : '#666666';
                     const prefix = isActive ? '> ' : '  ';
-                    
+
                     const weaponTxt = this.scene.add.text(0, index * 18, `${prefix}${w.name.toUpperCase()} [${w.currentAmmo}/${w.maxAmmo}]`, {
                         fontSize: '11px',
                         fontFamily: 'Orbitron',
                         color: color
                     });
-                    
+
                     if (isActive) {
                         weaponTxt.setStroke('#00ffff', 1);
                     }
-                    
+
                     this.weaponContainer.add(weaponTxt);
                 });
             } else {
                 this.weaponContainer.add(this.scene.add.text(0, 0, 'NONE', { fontSize: '11px', color: '#666666' }));
             }
-            
+
             // Show switch weapon button if player has more than 1 weapon
             if (unit.name === 'CORE-01' && unit.equippedWeapons.length > 1) {
                 this.showSwitchWeaponButton(true);
             } else {
                 this.showSwitchWeaponButton(false);
             }
-            
+
             // Show summon button if player
             if (unit.name === 'CORE-01') {
                 this.showSummonButton(true, 30); // Hardcoded cost for Sentinel for now
             } else {
                 this.showSummonButton(false);
             }
-            
+
             this.unitInfo.desc.setText(unit.description);
         } else {
             this.unitInfo.name.setText('NONE');
@@ -533,7 +534,7 @@ export class Sidebar extends GameObjects.Container {
         this.collectBtn = scene.add.container(x, y);
         this.collectBtnBg = scene.add.rectangle(0, 0, 200, 45, 0xffaa00, 0.2);
         this.collectBtnBg.setStrokeStyle(2, 0xffaa00);
-        
+
         this.collectBtnText = scene.add.text(0, 0, 'COLLECT', {
             fontSize: '11px', // Smaller font for potential side-by-side
             fontFamily: 'Orbitron',
@@ -563,7 +564,7 @@ export class Sidebar extends GameObjects.Container {
         this.attackBtn = scene.add.container(x, y);
         this.attackBtnBg = scene.add.rectangle(0, 0, 200, 45, 0xff0000, 0.2);
         this.attackBtnBg.setStrokeStyle(2, 0xff0000);
-        
+
         this.attackBtnText = scene.add.text(0, 0, 'ATTACK', {
             fontSize: '11px', // Smaller font for potential side-by-side
             fontFamily: 'Orbitron',
@@ -593,7 +594,7 @@ export class Sidebar extends GameObjects.Container {
         this.switchWeaponBtn = scene.add.container(x, y);
         this.switchWeaponBtnBg = scene.add.rectangle(0, 0, 200, 45, 0x00ccff, 0.2);
         this.switchWeaponBtnBg.setStrokeStyle(2, 0x00ccff);
-        
+
         this.switchWeaponBtnText = scene.add.text(0, 0, 'SWITCH WEAPON', {
             fontSize: '14px',
             fontFamily: 'Orbitron',
@@ -623,7 +624,7 @@ export class Sidebar extends GameObjects.Container {
         this.summonBtn = scene.add.container(x, y);
         this.summonBtnBg = scene.add.rectangle(0, 0, 200, 45, 0x00ff88, 0.2);
         this.summonBtnBg.setStrokeStyle(2, 0x00ff88);
-        
+
         this.summonBtnText = scene.add.text(0, 0, 'CONSTRUCT MACHINE', {
             fontSize: '14px',
             fontFamily: 'Orbitron',
@@ -670,7 +671,7 @@ export class Sidebar extends GameObjects.Container {
             const btn = scene.add.container(width / 2, 40 + i * 55);
             const bg = scene.add.rectangle(0, 0, 200, 45, 0x00ff88, 0.2);
             bg.setStrokeStyle(2, 0x00ff88);
-            
+
             const txt = scene.add.text(-90, 0, name, {
                 fontSize: '14px',
                 fontFamily: 'Orbitron',
@@ -712,7 +713,7 @@ export class Sidebar extends GameObjects.Container {
         const container = scene.add.container(x, y);
         const bg = scene.add.rectangle(0, 0, 200, 45, 0x333333);
         bg.setStrokeStyle(2, 0x555555);
-        
+
         const text = scene.add.text(0, 0, 'PAUSE SYSTEM', {
             fontSize: '16px',
             fontFamily: 'Arial',
@@ -726,7 +727,7 @@ export class Sidebar extends GameObjects.Container {
             bg.setFillStyle(0x444444);
             bg.setStrokeStyle(2, 0x00ffff);
         });
-        
+
         bg.on('pointerout', () => {
             bg.setFillStyle(0x333333);
             bg.setStrokeStyle(2, 0x555555);
@@ -745,7 +746,7 @@ export class Sidebar extends GameObjects.Container {
         const container = scene.add.container(x, y);
         const bg = scene.add.rectangle(0, 0, 200, 45, 0x004400);
         bg.setStrokeStyle(2, 0x00aa00);
-        
+
         const text = scene.add.text(0, 0, 'FINISH MISSION', {
             fontSize: '16px',
             fontFamily: 'Arial',
@@ -759,7 +760,7 @@ export class Sidebar extends GameObjects.Container {
             bg.setFillStyle(0x006600);
             bg.setStrokeStyle(2, 0x00ff00);
         });
-        
+
         bg.on('pointerout', () => {
             bg.setFillStyle(0x004400);
             bg.setStrokeStyle(2, 0x00aa00);
@@ -779,7 +780,7 @@ export class Sidebar extends GameObjects.Container {
         this.autoBtn = scene.add.container(x, y);
         this.autoBtnBg = scene.add.rectangle(0, 0, 90, 24, 0x333333);
         this.autoBtnBg.setStrokeStyle(1, 0x666666);
-        
+
         this.autoBtnText = scene.add.text(0, 0, 'AUTO: OFF', {
             fontSize: '10px',
             fontFamily: 'Orbitron',
@@ -788,13 +789,13 @@ export class Sidebar extends GameObjects.Container {
 
         this.autoBtn.add([this.autoBtnBg, this.autoBtnText]);
         this.autoBtnBg.setInteractive({ useHandCursor: true });
-        
+
         this.autoBtnBg.on('pointerover', () => this.autoBtnBg.setStrokeStyle(1, 0x00ccff));
         this.autoBtnBg.on('pointerout', () => {
             const isEnabled = this.autoBtnText.text.includes('ON');
             this.autoBtnBg.setStrokeStyle(1, isEnabled ? 0x00ff88 : 0x666666);
         });
-        
+
         this.autoBtnBg.on('pointerdown', () => {
             this.scene.events.emit('toggle-auto-request');
         });
@@ -820,7 +821,7 @@ export class Sidebar extends GameObjects.Container {
         this.waitBtn = scene.add.container(x, y);
         const bg = scene.add.rectangle(0, 0, 180, 35, 0x444444);
         bg.setStrokeStyle(2, 0x888888);
-        
+
         const text = scene.add.text(0, 0, 'WAIT (20 AP)', {
             fontSize: '14px',
             fontFamily: 'Orbitron',
@@ -829,10 +830,10 @@ export class Sidebar extends GameObjects.Container {
 
         this.waitBtn.add([bg, text]);
         bg.setInteractive({ useHandCursor: true });
-        
+
         bg.on('pointerover', () => bg.setStrokeStyle(2, 0xffffff));
         bg.on('pointerout', () => bg.setStrokeStyle(2, 0x888888));
-        
+
         bg.on('pointerdown', () => {
             this.scene.events.emit('wait-request');
         });

@@ -34,35 +34,70 @@ export class PlayerAI {
             return;
         }
 
-        // 2. If have enough scrap and AP, try to summon a Sentinel (index 0)
-        // Check if there's an empty cell adjacent to the player
-        const template = machineUnits[0]; // sentinel
-        if (player.scrap >= template.cost && player.ap >= template.cost) {
-            const neighbors = [
-                { dx: 0, dy: -1 }, { dx: 0, dy: 1 },
-                { dx: -1, dy: 0 }, { dx: 1, dy: 0 }
-            ];
-            // Shuffle neighbors to avoid always picking the same spot
-            neighbors.sort(() => Math.random() - 0.5);
+        // Freedom check
+        const currentFree = this.getFreeNeighbors(player.gx, player.gy, unitMap, mapWidth, mapHeight);
 
-            for (const n of neighbors) {
-                const nx = player.gx + n.dx;
-                const ny = player.gy + n.dy;
-                const key = `${nx},${ny}`;
-                
-                if (nx >= 0 && nx < mapWidth && ny >= 0 && ny < mapHeight && !unitMap.has(key)) {
+        // 2. Seek free space first if crowded
+        // If we only have 2 or fewer free spots, try to move to a freer area before summoning
+        if (currentFree.length <= 2 && player.ap >= 25 && player.scrap >= 20) {
+            for (const f of currentFree) {
+                const nx = player.gx + f.dx;
+                const ny = player.gy + f.dy;
+                const nextFree = this.getFreeNeighbors(nx, ny, unitMap, mapWidth, mapHeight);
+                if (nextFree.length > currentFree.length) {
                     onAction({ 
-                        type: 'summon', 
-                        machineIndex: 0, 
-                        summonGx: nx, 
-                        summonGy: ny 
+                        type: 'move', 
+                        move: { unit: player, fromGx: player.gx, fromGy: player.gy, toGx: nx, toGy: ny } 
                     });
                     return;
                 }
             }
         }
 
-        // 3. Move toward nearest scrap if not full
+        // 3. If have enough scrap and AP, try to summon a machine
+        // CRITICAL: Only summon if we have at least 2 free neighbors, so summoning one won't trap us.
+        if (currentFree.length >= 2) {
+            const counts = machineUnits.map(m => ({ 
+                template: m, 
+                count: 0, 
+                index: machineUnits.indexOf(m) 
+            }));
+
+            for (const unit of unitMap.values()) {
+                if (unit.faction === player.faction && unit !== player) {
+                    const machineMatch = counts.find(c => c.template.name === unit.name);
+                    if (machineMatch) {
+                        machineMatch.count++;
+                    }
+                }
+            }
+
+            // Sort by count (ascending) to find the least constructed
+            counts.sort((a, b) => a.count - b.count);
+
+            for (const item of counts) {
+                const template = item.template;
+                if (player.scrap >= template.cost && player.ap >= template.cost) {
+                    // Shuffle neighbors to avoid always picking the same spot
+                    const shuffledNeighbors = [...currentFree].sort(() => Math.random() - 0.5);
+
+                    for (const n of shuffledNeighbors) {
+                        const nx = n.gx;
+                        const ny = n.gy;
+                        
+                        onAction({ 
+                            type: 'summon', 
+                            machineIndex: item.index, 
+                            summonGx: nx, 
+                            summonGy: ny 
+                        });
+                        return;
+                    }
+                }
+            }
+        }
+
+        // 4. Move toward nearest scrap if not full
         if (player.scrap < Player.MAX_SCRAP) {
             const nearestScrap = this.findNearestScrap(player, scrapMap, unitMap);
             if (nearestScrap) {
@@ -97,6 +132,19 @@ export class PlayerAI {
             }
         }
         return nearest;
+    }
+
+    private static getFreeNeighbors(gx: number, gy: number, unitMap: Map<string, any>, mapWidth: number, mapHeight: number): {gx: number, gy: number, dx: number, dy: number}[] {
+        const neighbors = [
+            { dx: 0, dy: -1 }, { dx: 0, dy: 1 },
+            { dx: -1, dy: 0 }, { dx: 1, dy: 0 }
+        ];
+        return neighbors
+            .map(n => ({ gx: gx + n.dx, gy: gy + n.dy, dx: n.dx, dy: n.dy }))
+            .filter(n => {
+                if (n.gx < 0 || n.gx >= mapWidth || n.gy < 0 || n.gy >= mapHeight) return false;
+                return !unitMap.has(`${n.gx},${n.gy}`);
+            });
     }
 
     private static findPathMove(
