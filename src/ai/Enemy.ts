@@ -7,12 +7,25 @@ export class EnemyAI {
     static run(
         self: Unit, 
         unitMap: Map<string, any>, 
+        deadBodies: Map<string, any>,
         mapWidth: number, 
         mapHeight: number,
         onAttack: (target: Unit) => void,
         onMove: (move: MoveAction) => void,
+        onSkill: (skillKey: string, targetGx: number, targetGy: number) => void,
         onPass: () => void
     ) {
+        // 0. Try to use skills
+        if (self.skills.includes('consume-brain') && self.ap >= 80) {
+            for (const body of deadBodies.values()) {
+                const dist = Math.abs(self.gx - body.gx) + Math.abs(self.gy - body.gy);
+                if (dist <= 1) {
+                    onSkill('consume-brain', body.gx, body.gy);
+                    return;
+                }
+            }
+        }
+
         // Find nearest enemy (different faction)
         const target = this.findNearestEnemy(self, unitMap);
         

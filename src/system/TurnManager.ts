@@ -22,6 +22,7 @@ export class TurnManager {
     private allUnits: Unit[] = [];
     private player: Player;
     private unitMap: Map<string, any>;
+    private deadBodies: Map<string, any>;
     state: SystemState = SystemState.PROCESSING;
     turnCount: number = 0;
     currentUnit: Unit | null = null;
@@ -37,9 +38,12 @@ export class TurnManager {
     onPlayerTurnStart: (() => void) | null = null;
     onLose: (() => void) | null = null;
 
-    constructor(player: Player, unitMap: Map<string, any>) {
+    onSkill: ((unit: Unit, skillKey: string, targetGx: number, targetGy: number, onComplete: () => void) => void) | null = null;
+
+    constructor(player: Player, unitMap: Map<string, any>, deadBodies: Map<string, any>) {
         this.player = player;
         this.unitMap = unitMap;
+        this.deadBodies = deadBodies;
     }
 
     registerUnits(units: Unit[]) {
@@ -124,6 +128,7 @@ export class TurnManager {
         EnemyAI.run(
             unit,
             this.unitMap,
+            this.deadBodies,
             this.mapWidth,
             this.mapHeight,
             // onAttack
@@ -149,6 +154,16 @@ export class TurnManager {
 
                 if (this.onEnemyMove) {
                     this.onEnemyMove(move, () => {
+                        this.nextTurn();
+                    });
+                } else {
+                    this.nextTurn();
+                }
+            },
+            // onSkill
+            (skillKey, targetGx, targetGy) => {
+                if (this.onSkill) {
+                    this.onSkill(unit, skillKey, targetGx, targetGy, () => {
                         this.nextTurn();
                     });
                 } else {

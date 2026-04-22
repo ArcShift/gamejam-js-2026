@@ -8,6 +8,7 @@ import { HumanUnit, humans } from '../entity/HumanUnit';
 import { MachineUnit, machineUnits } from '../entity/MachineUnit';
 import { TurnManager, SystemState } from '../system/TurnManager';
 import { Unit, UnitType, Faction } from '../entity/Unit';
+import { sevenSinEnhancements } from '../entity/SevenSinEnhancement';
 
 export class Game extends Scene
 {
@@ -17,6 +18,8 @@ export class Game extends Scene
     player: Player;
     units: Map<string, any> = new Map();
     scrap: Map<string, any> = new Map();
+    deadBodies: Map<string, any> = new Map();
+    deadBodySprites: Map<string, Phaser.GameObjects.Sprite> = new Map();
     selector: Phaser.GameObjects.Graphics;
     arrow: Phaser.GameObjects.Graphics;
     selectedGx: number = -1;
@@ -61,6 +64,8 @@ export class Game extends Scene
         // Clear tracking
         this.units.clear();
         this.scrap.clear();
+        this.deadBodies.clear();
+        this.deadBodySprites.clear();
 
         // Initialize Map
         if (activeMission) {
@@ -378,7 +383,7 @@ export class Game extends Scene
             }
 
             // Initialize Turn Manager
-            this.turnManager = new TurnManager(this.player, this.units);
+            this.turnManager = new TurnManager(this.player, this.units, this.deadBodies);
             this.turnManager.registerUnits(allGameUnits);
             this.turnManager.setMapSize(this.gameMap.activeMission.map_width, this.gameMap.activeMission.map_height);
 
@@ -450,8 +455,21 @@ export class Game extends Scene
                                 this.scene.start('GameOver', { message: 'CORE COMPROMISED' });
                                 return;
                             } else {
-                                // Destroy non-player target
                                 const targetKey = `${target.gx},${target.gy}`;
+                                
+                                if (target.type === UnitType.Human) {
+                                    this.deadBodies.set(targetKey, { gx: target.gx, gy: target.gy });
+                                    const targetX = this.mapOffsetX + target.gx * this.totalCellSize + this.cellSize / 2;
+                                    const targetY = this.mapOffsetY + target.gy * this.totalCellSize + this.cellSize / 2;
+                                    const deadSprite = this.add.sprite(targetX, targetY, 'human', 1);
+                                    deadSprite.setTint(0x555555);
+                                    deadSprite.setScale(0.5);
+                                    deadSprite.setRotation(Math.PI / 2);
+                                    deadSprite.setDepth(8);
+                                    this.deadBodySprites.set(targetKey, deadSprite);
+                                }
+                                
+                                // Destroy non-player target
                                 this.units.delete(targetKey);
                                 this.turnManager.removeUnit(target);
                                 // @ts-ignore
@@ -470,6 +488,64 @@ export class Game extends Scene
                         onComplete();
                     }
                 });
+            };
+
+            this.turnManager.onSkill = (unit, skillKey, targetGx, targetGy, onComplete) => {
+                if (skillKey === 'consume-brain') {
+                    unit.ap -= 80;
+                    const key = `${targetGx},${targetGy}`;
+                    this.deadBodies.delete(key);
+                    const sprite = this.deadBodySprites.get(key);
+                    if (sprite) {
+                        sprite.destroy();
+                        this.deadBodySprites.delete(key);
+                    }
+
+                    // Apply enhancement
+                    const r = Math.floor(Math.random() * sevenSinEnhancements.length);
+                    const enhancement = sevenSinEnhancements[r];
+                    
+                    unit.maxHp += enhancement.buff * 5;
+                    unit.hp += enhancement.buff * 5;
+                    unit.defense += enhancement.buff;
+                    unit.speed -= enhancement.debuff;
+                    
+                    const tx = this.mapOffsetX + unit.gx * this.totalCellSize + this.cellSize / 2;
+                    const ty = this.mapOffsetY + unit.gy * this.totalCellSize + this.cellSize / 2;
+
+                    const quoteText = this.add.text(tx, ty - 30, `"${enhancement.quote}"\n[${enhancement.name}]`, {
+                        fontSize: '12px',
+                        fontFamily: 'Orbitron',
+                        color: '#ff00ff',
+                        align: 'center',
+                        stroke: '#000000',
+                        strokeThickness: 2
+                    }).setOrigin(0.5).setDepth(20);
+
+                    // @ts-ignore
+                    const unitContainer = unit.container;
+                    this.tweens.add({
+                        targets: unitContainer,
+                        scaleX: 1.2,
+                        scaleY: 1.2,
+                        yoyo: true,
+                        duration: 300,
+                    });
+
+                    this.tweens.add({
+                        targets: quoteText,
+                        y: ty - 60,
+                        alpha: 0,
+                        duration: 2000,
+                        ease: 'Power2',
+                        onComplete: () => {
+                            quoteText.destroy();
+                            onComplete();
+                        }
+                    });
+                } else {
+                    onComplete();
+                }
             };
 
             this.turnManager.onPlayerTurnStart = () => {
@@ -598,7 +674,20 @@ export class Game extends Scene
                             onComplete: () => {
                                 flashGraphic.destroy();
                                 if (target.isDead()) {
+                                    if (target.type === UnitType.Human) {
+                                        this.deadBodies.set(key, { gx: target.gx, gy: target.gy });
+                                        const targetX = this.mapOffsetX + target.gx * this.totalCellSize + this.cellSize / 2;
+                                        const targetY = this.mapOffsetY + target.gy * this.totalCellSize + this.cellSize / 2;
+                                        const deadSprite = this.add.sprite(targetX, targetY, 'human', 1);
+                                        deadSprite.setTint(0x555555);
+                                        deadSprite.setScale(0.5);
+                                        deadSprite.setRotation(Math.PI / 2);
+                                        deadSprite.setDepth(8);
+                                        this.deadBodySprites.set(key, deadSprite);
+                                    }
+                                    
                                     this.units.delete(key);
+                                    // @ts-ignore
                                     target.container.destroy();
                                     this.turnManager.removeUnit(target);
                                     this.selectedGx = -1;
