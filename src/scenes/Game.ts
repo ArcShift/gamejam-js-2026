@@ -504,11 +504,29 @@ export class Game extends Scene
                     // Apply enhancement
                     const r = Math.floor(Math.random() * sevenSinEnhancements.length);
                     const enhancement = sevenSinEnhancements[r];
+                    unit.enhancement = enhancement.name;
                     
                     unit.maxHp += enhancement.buff * 5;
                     unit.hp += enhancement.buff * 5;
                     unit.defense += enhancement.buff;
                     unit.speed -= enhancement.debuff;
+
+                    // Apply damage bonus for attack-enhancing sins
+                    if (['sloth', 'wrath', 'pride'].includes(enhancement.key)) {
+                        unit.damageBonus += enhancement.buff;
+                    }
+
+                    // Gluttony heal bonus
+                    if (enhancement.key === 'gluttony') {
+                        unit.hp = Math.min(unit.maxHp, unit.hp + 20);
+                    }
+
+                    // Switch sprite to enhanced frame (index 2)
+                    // @ts-ignore
+                    if (unit.sprite && unit.spriteIndex && unit.spriteIndex.length > 2) {
+                        // @ts-ignore
+                        unit.sprite.setFrame(unit.spriteIndex[2]);
+                    }
                     
                     const tx = this.mapOffsetX + unit.gx * this.totalCellSize + this.cellSize / 2;
                     const ty = this.mapOffsetY + unit.gy * this.totalCellSize + this.cellSize / 2;
@@ -654,7 +672,7 @@ export class Game extends Scene
                 
                 if (target && target.type === UnitType.Human && this.turnManager.state === SystemState.IDLE) {
                     this.player.faceTarget(target.gx);
-                    if (this.player.attack(target)) {
+                    if (this.player.attack(target, [...this.units.values()])) {
                         this.turnManager.state = SystemState.ANIMATING;
                         
                         // Flash the target red

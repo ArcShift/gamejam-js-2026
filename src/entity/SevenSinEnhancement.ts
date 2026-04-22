@@ -10,10 +10,10 @@ interface ISevenSinEnhancement {
 export const sevenSinEnhancements: ISevenSinEnhancement[] = [{
     key: 'lust',
     name: 'Lust',
-    quote: '??',
-    description: '??',
-    buff: 0,
-    debuff: 0
+    quote: 'Your heart is mine',
+    description: 'Increase max HP significantly but reduce speed',
+    buff: 6,
+    debuff: 3
 }, {
     key: 'gluttony',
     name: 'Gluttony',
@@ -26,7 +26,7 @@ export const sevenSinEnhancements: ISevenSinEnhancement[] = [{
     key: 'greed',
     name: 'Greed',
     quote: 'I want more and more and more',
-    description: 'Increase rifle ammo but reduce health each turn. only work if it has rifle and ammo not at max and healt level not cause death when reduced',
+    description: 'Increase rifle ammo but reduce health each turn. Only works if it has rifle and ammo not at max and health level does not cause death when reduced',
     buff: 1,
     debuff: 2
 }, {
@@ -47,9 +47,9 @@ export const sevenSinEnhancements: ISevenSinEnhancement[] = [{
     key: 'envy',
     name: 'Envy',
     quote: 'I want what you have',
-    description: '??',
-    buff: 0,
-    debuff: 0
+    description: 'Increase speed but reduce defense',
+    buff: 8,
+    debuff: 4
 }, {
     key: 'pride',
     name: 'Pride',

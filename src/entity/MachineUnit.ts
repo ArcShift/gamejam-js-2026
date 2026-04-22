@@ -72,7 +72,7 @@ export const machineUnits: IMachine[] = [
         name: "Heavy",
         description: "Slow, armored construction. Melee focus.",
         maxHp: 200,
-        defense: 12,
+        defense: 5,
         speed: 10,
         cost: 50,
         weapon: ['knife'],

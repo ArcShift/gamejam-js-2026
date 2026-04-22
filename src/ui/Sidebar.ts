@@ -2,7 +2,7 @@ import { Scene, GameObjects } from 'phaser';
 
 export class Sidebar extends GameObjects.Container {
     private detailsContainer: GameObjects.Container;
-    private unitInfo: { name: GameObjects.Text, hp: GameObjects.Text, stats: GameObjects.Text, desc: GameObjects.Text, portrait: GameObjects.Sprite };
+    private unitInfo: { name: GameObjects.Text, hp: GameObjects.Text, stats: GameObjects.Text, enhancement: GameObjects.Text, desc: GameObjects.Text, portrait: GameObjects.Sprite };
     private weaponContainer: GameObjects.Container;
     private scrapInfo: { title: GameObjects.Text, value: GameObjects.Text };
     private bg: GameObjects.Rectangle;
@@ -200,6 +200,7 @@ export class Sidebar extends GameObjects.Container {
             name: scene.add.text(0, 25, 'No Unit Selected', { fontSize: '18px', color: '#ffffff' }),
             hp: scene.add.text(0, 50, '', { fontSize: '13px', color: '#ff5555' }), // Smaller font for row
             stats: scene.add.text(0, 75, '', { fontSize: '13px', color: '#aaaaaa' }),
+            enhancement: scene.add.text(0, 95, '', { fontSize: '12px', fontFamily: 'Orbitron', color: '#ff00ff' }),
             desc: scene.add.text(0, 150, '', { fontSize: '12px', color: '#888888', wordWrap: { width: width - 40 } }),
             portrait: scene.add.sprite(width - 60, 40, 'human', 0).setScale(0.8).setVisible(false)
         };
@@ -232,7 +233,7 @@ export class Sidebar extends GameObjects.Container {
         });
 
         this.detailsContainer.add([
-            this.unitTitle, this.unitInfo.name, this.unitInfo.hp, this.unitInfo.stats, this.weaponTitle, this.weaponContainer, this.unitInfo.desc,
+            this.unitTitle, this.unitInfo.name, this.unitInfo.hp, this.unitInfo.stats, this.unitInfo.enhancement, this.weaponTitle, this.weaponContainer, this.unitInfo.desc,
             this.unitInfo.portrait,
             this.scrapTitle, this.scrapInfo.title, this.scrapInfo.value, this.carriedScrapText
         ]);
@@ -254,7 +255,13 @@ export class Sidebar extends GameObjects.Container {
         
         // Stats Row 2: DEF & SPD
         this.unitInfo.stats.y = currentY;
-        currentY += 25;
+        currentY += 20;
+
+        // Enhancement Row
+        if (this.unitInfo.enhancement.text.length > 0) {
+            this.unitInfo.enhancement.y = currentY;
+            currentY += 22;
+        }
 
         // Weapons Section
         if (this.weaponContainer.length > 0) {
@@ -357,6 +364,14 @@ export class Sidebar extends GameObjects.Container {
             this.unitInfo.name.setText(unit.name.toUpperCase());
             this.unitInfo.hp.setText(`HP: ${unit.hp}/${unit.maxHp}  |  AP: ${Math.floor(unit.ap)}`);
             this.unitInfo.stats.setText(`DEF: ${unit.defense}  |  SPD: ${unit.speed}`);
+            
+            if (unit.enhancement) {
+                this.unitInfo.enhancement.setText(`ENHANCED: ${unit.enhancement.toUpperCase()}`);
+                this.unitInfo.enhancement.setVisible(true);
+            } else {
+                this.unitInfo.enhancement.setText('');
+                this.unitInfo.enhancement.setVisible(false);
+            }
             
             // Update Portrait
             if (unit.spriteIndex && unit.spriteIndex.length > 0) {

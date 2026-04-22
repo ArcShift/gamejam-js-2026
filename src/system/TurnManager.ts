@@ -100,8 +100,23 @@ export class TurnManager {
         this.turnCount++;
         for (const unit of this.allUnits) {
             unit.regenAp();
+            this.applyTurnEffects(unit);
         }
         if (this.onTurnTick) this.onTurnTick();
+    }
+
+    private applyTurnEffects(unit: Unit) {
+        if (!unit.enhancement) return;
+
+        if (unit.enhancement === 'Greed') {
+            // Increase rifle ammo but reduce health each turn.
+            // Only works if it has rifle and ammo not at max and health level does not cause death when reduced
+            const rifle = unit.equippedWeapons.find(w => w.key.includes('rifle'));
+            if (rifle && rifle.currentAmmo < rifle.maxAmmo && unit.hp > 1) {
+                rifle.currentAmmo++;
+                unit.hp--;
+            }
+        }
     }
 
     /** Called after player action is complete */

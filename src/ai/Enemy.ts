@@ -60,7 +60,7 @@ export class EnemyAI {
             for (const item of sortedWeapons) {
                 const weapon = item.weapon;
                 if (dist <= weapon.range && self.ap >= weapon.apCost && weapon.currentAmmo > 0) {
-                    self.attack(target, item.index);
+                    self.attack(target, [...unitMap.values()], item.index);
                     onAttack(target);
                     return;
                 }

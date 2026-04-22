@@ -44,6 +44,8 @@ export class Unit implements IUnit {
     hp: number;
     ap: number = 0;
     selectedWeaponIndex: number = 0;
+    enhancement?: string;
+    damageBonus: number = 0;
 
     constructor(name: string, description: string, maxHp: number, defense: number, speed: number, type: UnitType, weapon: string[], faction: Faction, skills: string[], spriteIndex: number[]) {
         this.name = name;
@@ -84,7 +86,7 @@ export class Unit implements IUnit {
         return this.hp <= 0;
     }
 
-    attack(target: Unit, weaponIndex?: number): boolean {
+    attack(target: Unit, units: Unit[], weaponIndex?: number): boolean {
         const idx = weaponIndex !== undefined ? weaponIndex : this.selectedWeaponIndex;
         if (this.equippedWeapons.length <= idx) return false;
         
@@ -99,9 +101,22 @@ export class Unit implements IUnit {
         
         this.ap -= weapon.apCost;
         weapon.currentAmmo--;
-
+ 
         // Calculate damage (simple subtraction with min of 1 if hit)
-        const damageDealt = Math.max(1, weapon.damage - target.defense);
+        let damageDealt = Math.max(1, (weapon.damage + this.damageBonus) - target.defense);
+        
+        if (this.enhancement === 'Pride') {
+            const hasAllyNearby = units.some(u => 
+                u !== this && 
+                u.faction === this.faction && 
+                Math.abs(u.gx - this.gx) <= 1 && 
+                Math.abs(u.gy - this.gy) <= 1
+            );
+            if (!hasAllyNearby) {
+                damageDealt += 10;
+            }
+        }
+
         target.takeDamage(damageDealt);
         
         return true;
