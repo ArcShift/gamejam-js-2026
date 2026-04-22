@@ -1,6 +1,7 @@
 import { Unit, AP_ACT_THRESHOLD } from '../entity/Unit';
 import { Player } from '../entity/Player';
 import { EnemyAI } from '../ai/Enemy';
+import { PlayerAI, PlayerAIAction } from '../ai/Player';
 
 export enum SystemState {
     IDLE,        // Waiting for player input
@@ -23,9 +24,11 @@ export class TurnManager {
     private player: Player;
     private unitMap: Map<string, any>;
     private deadBodies: Map<string, any>;
+    private scrapMap: Map<string, any>;
     state: SystemState = SystemState.PROCESSING;
     turnCount: number = 0;
     currentUnit: Unit | null = null;
+    isAIEnabled: boolean = false;
 
     // Map bounds for stuck check
     private mapWidth: number = 20;
@@ -35,15 +38,14 @@ export class TurnManager {
     onEnemyMove: ((action: MoveAction, onComplete: () => void) => void) | null = null;
     onUnitAttack: ((attacker: Unit, target: Unit, onComplete: () => void) => void) | null = null;
     onTurnTick: (() => void) | null = null;
-    onPlayerTurnStart: (() => void) | null = null;
-    onLose: (() => void) | null = null;
-
     onSkill: ((unit: Unit, skillKey: string, targetGx: number, targetGy: number, onComplete: () => void) => void) | null = null;
+    onPlayerAIAction: ((action: PlayerAIAction, onComplete: () => void) => void) | null = null;
 
-    constructor(player: Player, unitMap: Map<string, any>, deadBodies: Map<string, any>) {
+    constructor(player: Player, unitMap: Map<string, any>, deadBodies: Map<string, any>, scrapMap: Map<string, any>) {
         this.player = player;
         this.unitMap = unitMap;
         this.deadBodies = deadBodies;
+        this.scrapMap = scrapMap;
     }
 
     registerUnits(units: Unit[]) {
@@ -77,14 +79,13 @@ export class TurnManager {
         this.currentUnit = highestAPUnit;
 
         if (this.currentUnit instanceof Player) {
-            // Check if player is surrounded before starting their turn
-            if (this.checkPlayerStuck()) {
-                this.state = SystemState.ANIMATING;
-                if (this.onLose) this.onLose();
-                return;
+            // AUTOMATIC PLAYER AI OR MANUAL
+            if (this.isAIEnabled) {
+                this.state = SystemState.PROCESSING;
+                this.runPlayerAI();
+            } else {
+                this.state = SystemState.IDLE;
             }
-            this.state = SystemState.IDLE;
-            if (this.onPlayerTurnStart) this.onPlayerTurnStart();
         } else {
             // All other units use AI
             this.state = SystemState.PROCESSING;
@@ -139,6 +140,25 @@ export class TurnManager {
         return true;
     }
 
+    public runPlayerAI() {
+        PlayerAI.run(
+            this.player,
+            this.unitMap,
+            this.scrapMap,
+            this.mapWidth,
+            this.mapHeight,
+            (action) => {
+                if (this.onPlayerAIAction) {
+                    this.onPlayerAIAction(action, () => {
+                        setTimeout(() => this.nextTurn(), 10);
+                    });
+                } else {
+                    setTimeout(() => this.nextTurn(), 10);
+                }
+            }
+        );
+    }
+
     private runUnitAI(unit: Unit) {
         EnemyAI.run(
             unit,
@@ -146,14 +166,13 @@ export class TurnManager {
             this.deadBodies,
             this.mapWidth,
             this.mapHeight,
-            // onAttack
             (target) => {
                 if (this.onUnitAttack) {
                     this.onUnitAttack(unit, target, () => {
-                        this.nextTurn();
+                        setTimeout(() => this.nextTurn(), 10);
                     });
                 } else {
-                    this.nextTurn();
+                    setTimeout(() => this.nextTurn(), 10);
                 }
             },
             // onMove
@@ -169,47 +188,27 @@ export class TurnManager {
 
                 if (this.onEnemyMove) {
                     this.onEnemyMove(move, () => {
-                        this.nextTurn();
+                        setTimeout(() => this.nextTurn(), 10);
                     });
                 } else {
-                    this.nextTurn();
+                    setTimeout(() => this.nextTurn(), 10);
                 }
             },
             // onSkill
             (skillKey, targetGx, targetGy) => {
                 if (this.onSkill) {
                     this.onSkill(unit, skillKey, targetGx, targetGy, () => {
-                        this.nextTurn();
+                        setTimeout(() => this.nextTurn(), 10);
                     });
                 } else {
-                    this.nextTurn();
+                    setTimeout(() => this.nextTurn(), 10);
                 }
             },
             // onPass
             () => {
-                this.nextTurn();
+                setTimeout(() => this.nextTurn(), 10);
             }
         );
     }
 
-    private checkPlayerStuck(): boolean {
-        const directions = [
-            { dx: 0, dy: -1 }, { dx: 0, dy: 1 },
-            { dx: -1, dy: 0 }, { dx: 1, dy: 0 },
-        ];
-
-        for (const dir of directions) {
-            const nx = this.player.gx + dir.dx;
-            const ny = this.player.gy + dir.dy;
-            const key = `${nx},${ny}`;
-
-            if (nx >= 0 && nx < this.mapWidth && ny >= 0 && ny < this.mapHeight) {
-                if (!this.unitMap.has(key)) {
-                    return false; // Found an empty adjacent cell!
-                }
-            }
-        }
-
-        return true; // No empty adjacent cells found
-    }
 }

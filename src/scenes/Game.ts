@@ -383,7 +383,7 @@ export class Game extends Scene
             }
 
             // Initialize Turn Manager
-            this.turnManager = new TurnManager(this.player, this.units, this.deadBodies);
+            this.turnManager = new TurnManager(this.player, this.units, this.deadBodies, this.scrap);
             this.turnManager.registerUnits(allGameUnits);
             this.turnManager.setMapSize(this.gameMap.activeMission.map_width, this.gameMap.activeMission.map_height);
 
@@ -423,6 +423,36 @@ export class Game extends Scene
             };
 
             // Handle unit attack animation
+            this.turnManager.onPlayerAIAction = (action, onComplete) => {
+                if (action.type === 'move') {
+                    const move = action.move!;
+                    const targetX = this.mapOffsetX + move.toGx * this.totalCellSize + this.cellSize / 2;
+                    const targetY = this.mapOffsetY + move.toGy * this.totalCellSize + this.cellSize / 2;
+                    
+                    // Visual feedback for AI moving
+                    this.cameras.main.flash(100, 0, 210, 255, true);
+
+                    this.tweens.add({
+                        targets: this.player.container,
+                        x: targetX,
+                        y: targetY,
+                        duration: 300,
+                        onComplete: () => {
+                            this.player.gx = move.toGx;
+                            this.player.gy = move.toGy;
+                            onComplete();
+                        }
+                    });
+                } else if (action.type === 'collect') {
+                    this.handleCollectAction(onComplete);
+                } else if (action.type === 'summon') {
+                    this.selectedMachineIndex = action.machineIndex!;
+                    this.performSummon(action.summonGx!, action.summonGy!, onComplete);
+                } else {
+                    onComplete();
+                }
+            };
+
             this.turnManager.onUnitAttack = (attacker, target, onComplete) => {
                 attacker.faceTarget(target.gx);
                 const targetX = this.mapOffsetX + target.gx * this.totalCellSize + this.cellSize / 2;
@@ -599,70 +629,7 @@ export class Game extends Scene
 
             // Handle scrap collection
             this.events.on('collect-scrap-action', () => {
-                const key = `${this.player.gx},${this.player.gy}`;
-                const scrap = this.scrap.get(key);
-                
-                // Only allow if it's the player's turn (IDLE state)
-                if (scrap && this.turnManager.state === SystemState.IDLE) {
-                    // Calculate how much can be collected
-                    const spaceLeft = Player.MAX_SCRAP - this.player.scrap;
-                    const amountToCollect = Math.min(scrap.value, spaceLeft);
-
-                    if (amountToCollect <= 0) {
-                        this.showNotEnoughSpace();
-                        return;
-                    }
-
-                    // Check if player has enough AP for the amount being collected
-                    if (this.player.ap < amountToCollect) {
-                        this.showNotEnoughAP();
-                        return;
-                    }
-
-                    // Block further input during animation
-                    this.turnManager.state = SystemState.ANIMATING;
-
-                    // Consume AP and collect scrap
-                    this.player.ap -= amountToCollect;
-                    this.player.scrap += amountToCollect;
-                    
-                    // Update or remove scrap from map
-                    scrap.value -= amountToCollect;
-                    const fullyCollected = scrap.value <= 0;
-                    
-                    if (fullyCollected) {
-                        this.scrap.delete(key);
-                    }
-                    
-                    // Visual effect for collection
-                    this.tweens.add({
-                        targets: scrap.container,
-                        y: fullyCollected ? scrap.container.y - 50 : scrap.container.y - 20,
-                        alpha: fullyCollected ? 0 : 0.7,
-                        scale: fullyCollected ? 1.5 : 0.8,
-                        duration: 500,
-                        ease: 'Power2',
-                        yoyo: !fullyCollected,
-                        onComplete: () => {
-                            if (fullyCollected) {
-                                scrap.destroy();
-                            }
-                            
-                            // Formally end player action/turn
-                            this.turnManager.endPlayerAction();
-                        }
-                    });
-
-                    // Emit updates
-                    this.events.emit('ap-updated', {
-                        ap: this.player.ap,
-                        turn: this.turnManager.turnCount,
-                        activeUnitName: this.player.name
-                    });
-                    
-                    // Update selection info
-                    this.events.emit('cell-selected', { unit: this.player, scrap: fullyCollected ? null : scrap, canAttack: false, attackCost: 0 });
-                }
+                this.handleCollectAction();
             });
 
             // Handle attack action
@@ -760,6 +727,51 @@ export class Game extends Scene
                     }
 
                     this.events.emit('cell-selected', { unit, scrap, canAttack, attackCost });
+                }
+            });
+
+            // Handle AI toggle action
+            this.events.on('toggle-auto-action', () => {
+                this.turnManager.isAIEnabled = !this.turnManager.isAIEnabled;
+                this.events.emit('auto-toggled', this.turnManager.isAIEnabled);
+                
+                // If it's the player's turn and they were idling, start the AI
+                if (this.turnManager.isAIEnabled && 
+                    this.turnManager.currentUnit instanceof Player && 
+                    this.turnManager.state === SystemState.IDLE) {
+                    
+                    this.turnManager.state = SystemState.PROCESSING;
+                    this.turnManager.runPlayerAI();
+                }
+            });
+
+            // Handle wait action
+            this.events.on('wait-action', () => {
+                if (this.turnManager.state === SystemState.IDLE) {
+                    this.player.ap = Math.max(0, this.player.ap - 20);
+                    
+                    // Visual feedback for wait
+                    const txt = this.add.text(this.player.container.x, this.player.container.y - 40, 'WAITING...', {
+                        fontSize: '14px',
+                        fontFamily: 'Orbitron',
+                        color: '#aaaaaa'
+                    }).setOrigin(0.5);
+                    
+                    this.tweens.add({
+                        targets: txt,
+                        y: txt.y - 40,
+                        alpha: 0,
+                        duration: 800,
+                        onComplete: () => txt.destroy()
+                    });
+
+                    this.events.emit('ap-updated', {
+                        ap: this.player.ap,
+                        turn: this.turnManager.turnCount,
+                        activeUnitName: this.player.name
+                    });
+
+                    this.turnManager.endPlayerAction();
                 }
             });
 
@@ -935,17 +947,70 @@ export class Game extends Scene
         this.summonIndicators = [];
     }
 
-    private performSummon(gx: number, gy: number) {
+    private handleCollectAction(onComplete?: () => void) {
+        const key = `${this.player.gx},${this.player.gy}`;
+        const scrap = this.scrap.get(key);
+        
+        // Only allow if it's the player's turn (IDLE or PROCESSING if AI)
+        if (scrap && (this.turnManager.state === SystemState.IDLE || this.turnManager.state === SystemState.PROCESSING)) {
+            const spaceLeft = Player.MAX_SCRAP - this.player.scrap;
+            const amountToCollect = Math.min(scrap.value, spaceLeft);
+
+            if (amountToCollect <= 0) {
+                if (!onComplete) this.showNotEnoughSpace();
+                onComplete?.();
+                return;
+            }
+
+            if (this.player.ap < amountToCollect) {
+                if (!onComplete) this.showNotEnoughAP();
+                onComplete?.();
+                return;
+            }
+
+            this.turnManager.state = SystemState.ANIMATING;
+            this.player.ap -= amountToCollect;
+            this.player.scrap += amountToCollect;
+            
+            scrap.value -= amountToCollect;
+            const fullyCollected = scrap.value <= 0;
+            if (fullyCollected) this.scrap.delete(key);
+            
+            this.tweens.add({
+                targets: scrap.container,
+                y: fullyCollected ? scrap.container.y - 50 : scrap.container.y - 20,
+                alpha: fullyCollected ? 0 : 0.7,
+                scale: fullyCollected ? 1.5 : 0.8,
+                duration: 500,
+                ease: 'Power2',
+                yoyo: !fullyCollected,
+                onComplete: () => {
+                    if (fullyCollected) scrap.destroy();
+                    
+                    if (onComplete) {
+                        onComplete();
+                    } else {
+                        this.turnManager.endPlayerAction();
+                    }
+                }
+            });
+
+            this.events.emit('ap-updated', {
+                ap: this.player.ap,
+                turn: this.turnManager.turnCount,
+                activeUnitName: this.player.name
+            });
+            this.events.emit('cell-selected', { unit: this.player, scrap: fullyCollected ? null : scrap, canAttack: false, attackCost: 0 });
+        } else {
+            onComplete?.();
+        }
+    }
+
+    private performSummon(gx: number, gy: number, onComplete?: () => void) {
         const template = machineUnits[this.selectedMachineIndex];
         
-        if (this.player.scrap < template.cost) {
-            return;
-        }
-
-        if (this.player.ap < template.cost) {
-            this.showNotEnoughAP();
-            this.clearSummonIndicators();
-            this.events.emit('summon-panel-closed');
+        if (this.player.scrap < template.cost || this.player.ap < template.cost) {
+            onComplete?.();
             return;
         }
 
@@ -963,27 +1028,20 @@ export class Game extends Scene
         this.units.set(`${gx},${gy}`, machine);
         this.turnManager.registerUnits([...this.units.values()]);
         
-        // Visual feedback
         this.cameras.main.flash(300, 0, 255, 136);
-        
         this.clearSummonIndicators();
         this.events.emit('summon-panel-closed');
         
-        // Update UI
-        this.events.emit('cell-selected', { 
-            unit: this.player, 
-            scrap: this.scrap.get(`${this.selectedGx},${this.selectedGy}`), 
-            canAttack: false, 
-            attackCost: 0 
-        });
-
         this.events.emit('ap-updated', {
             ap: this.player.ap,
             turn: this.turnManager.turnCount,
             activeUnitName: this.player.name
         });
 
-        // End turn after summoning
-        this.turnManager.endPlayerAction();
+        if (onComplete) {
+            onComplete();
+        } else {
+            this.turnManager.endPlayerAction();
+        }
     }
 }

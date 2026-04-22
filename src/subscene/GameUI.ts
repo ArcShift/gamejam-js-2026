@@ -63,6 +63,14 @@ export class GameUI extends Scene {
             gameScene.events.emit('select-machine-action', index);
         });
 
+        this.events.on('toggle-auto-request', () => {
+            gameScene.events.emit('toggle-auto-action');
+        });
+
+        this.events.on('wait-request', () => {
+            gameScene.events.emit('wait-action');
+        });
+
         // Listen for panel open from game
         gameScene.events.on('summon-panel-opened', (data: { machines: any[], scrap: number }) => {
             this.sidebar.openSummonPanel(data.machines, data.scrap);
@@ -75,6 +83,10 @@ export class GameUI extends Scene {
         // Listen for AP updates from the Game scene
         gameScene.events.on('ap-updated', (data: { ap: number, turn: number, activeUnitName: string }) => {
             this.sidebar.updateAP(data.ap, data.turn, data.activeUnitName);
+        });
+
+        gameScene.events.on('auto-toggled', (isEnabled: boolean) => {
+            this.sidebar.updateAutoButton(isEnabled);
         });
 
         // Clear details when mission restarts or UI is reset

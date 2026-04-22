@@ -32,6 +32,11 @@ export class Sidebar extends GameObjects.Container {
     private summonBtnText: GameObjects.Text;
     private summonBtnBg: GameObjects.Rectangle;
 
+    private autoBtn: GameObjects.Container;
+    private autoBtnText: GameObjects.Text;
+    private autoBtnBg: GameObjects.Rectangle;
+    private waitBtn: GameObjects.Container;
+
     private summonPanel: GameObjects.Container;
     private machineButtons: GameObjects.Container[] = [];
 
@@ -89,6 +94,12 @@ export class Sidebar extends GameObjects.Container {
 
         // Summon Panel (hidden by default)
         this.createSummonPanel(scene, width, height);
+        
+        // Auto Button
+        this.createAutoButton(scene, width - 60, 25);
+
+        // Wait Button
+        this.createWaitButton(scene, width / 2, 570);
 
         // Add the container to the scene
         scene.add.existing(this);
@@ -774,5 +785,70 @@ export class Sidebar extends GameObjects.Container {
         });
 
         return container;
+    }
+
+    private createAutoButton(scene: Scene, x: number, y: number) {
+        this.autoBtn = scene.add.container(x, y);
+        this.autoBtnBg = scene.add.rectangle(0, 0, 90, 24, 0x333333);
+        this.autoBtnBg.setStrokeStyle(1, 0x666666);
+        
+        this.autoBtnText = scene.add.text(0, 0, 'AUTO: OFF', {
+            fontSize: '10px',
+            fontFamily: 'Orbitron',
+            color: '#aaaaaa'
+        }).setOrigin(0.5);
+
+        this.autoBtn.add([this.autoBtnBg, this.autoBtnText]);
+        this.autoBtnBg.setInteractive({ useHandCursor: true });
+        
+        this.autoBtnBg.on('pointerover', () => this.autoBtnBg.setStrokeStyle(1, 0x00ccff));
+        this.autoBtnBg.on('pointerout', () => {
+            const isEnabled = this.autoBtnText.text.includes('ON');
+            this.autoBtnBg.setStrokeStyle(1, isEnabled ? 0x00ff88 : 0x666666);
+        });
+        
+        this.autoBtnBg.on('pointerdown', () => {
+            this.scene.events.emit('toggle-auto-request');
+        });
+
+        this.add(this.autoBtn);
+    }
+
+    public updateAutoButton(isEnabled: boolean) {
+        if (isEnabled) {
+            this.autoBtnText.setText('AUTO: ON');
+            this.autoBtnText.setColor('#00ff88');
+            this.autoBtnBg.setStrokeStyle(2, 0x00ff88);
+            this.autoBtnBg.setFillStyle(0x004422);
+        } else {
+            this.autoBtnText.setText('AUTO: OFF');
+            this.autoBtnText.setColor('#aaaaaa');
+            this.autoBtnBg.setStrokeStyle(1, 0x666666);
+            this.autoBtnBg.setFillStyle(0x333333);
+        }
+    }
+
+    private createWaitButton(scene: Scene, x: number, y: number) {
+        this.waitBtn = scene.add.container(x, y);
+        const bg = scene.add.rectangle(0, 0, 180, 35, 0x444444);
+        bg.setStrokeStyle(2, 0x888888);
+        
+        const text = scene.add.text(0, 0, 'WAIT (20 AP)', {
+            fontSize: '14px',
+            fontFamily: 'Orbitron',
+            color: '#ffffff'
+        }).setOrigin(0.5);
+
+        this.waitBtn.add([bg, text]);
+        bg.setInteractive({ useHandCursor: true });
+        
+        bg.on('pointerover', () => bg.setStrokeStyle(2, 0xffffff));
+        bg.on('pointerout', () => bg.setStrokeStyle(2, 0x888888));
+        
+        bg.on('pointerdown', () => {
+            this.scene.events.emit('wait-request');
+        });
+
+        this.add(this.waitBtn);
     }
 }
