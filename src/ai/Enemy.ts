@@ -1,5 +1,9 @@
 import { Unit } from '../entity/Unit';
 import { MoveAction } from '../system/TurnManager';
+import * as EasyStar from 'easystarjs';
+
+const finder = new EasyStar.js();
+finder.enableSync();
 
 const CHASE_RANGE = 8;
 
@@ -63,9 +67,9 @@ export class EnemyAI {
             }
         }
 
-        // 2. Simple Chase AI
+        // 2. Pathfinding with EasyStar
         if (dist <= CHASE_RANGE) {
-            const move = this.findChaseMove(self, target, unitMap, mapWidth, mapHeight);
+            const move = this.findPathMove(self, target, unitMap, mapWidth, mapHeight);
             if (move && self.consumeMove()) {
                 onMove(move);
                 return;
@@ -92,44 +96,49 @@ export class EnemyAI {
         return nearest;
     }
 
-    private static findChaseMove(
+    private static findPathMove(
         self: Unit, 
         target: Unit, 
         unitMap: Map<string, any>, 
         mapWidth: number, 
         mapHeight: number
     ): MoveAction | null {
-        const directions = [
-            { dx: 0, dy: -1 }, { dx: 0, dy: 1 },
-            { dx: -1, dy: 0 }, { dx: 1, dy: 0 },
-        ];
-
-        let bestMove: MoveAction | null = null;
-        let bestDist = Math.abs(self.gx - target.gx) + Math.abs(self.gy - target.gy);
-
-        directions.sort(() => Math.random() - 0.5);
-
-        for (const dir of directions) {
-            const nx = self.gx + dir.dx;
-            const ny = self.gy + dir.dy;
-            const key = `${nx},${ny}`;
-
-            if (nx < 0 || nx >= mapWidth || ny < 0 || ny >= mapHeight) continue;
-            if (unitMap.has(key)) continue;
-
-            const dist = Math.abs(nx - target.gx) + Math.abs(ny - target.gy);
-            if (dist > 0 && dist < bestDist) {
-                bestDist = dist;
-                bestMove = {
-                    unit: self,
-                    fromGx: self.gx,
-                    fromGy: self.gy,
-                    toGx: nx,
-                    toGy: ny,
-                };
+        // Create grid (0 = walkable, 1 = blocked)
+        const grid: number[][] = [];
+        for (let y = 0; y < mapHeight; y++) {
+            grid[y] = [];
+            for (let x = 0; x < mapWidth; x++) {
+                const key = `${x},${y}`;
+                // Blocked if there's a unit, UNLESS it's the target or ourselves
+                const isOccupied = unitMap.has(key);
+                const isTarget = x === target.gx && y === target.gy;
+                const isSelf = x === self.gx && y === self.gy;
+                
+                grid[y][x] = (isOccupied && !isTarget && !isSelf) ? 1 : 0;
             }
         }
 
-        return bestMove;
+        finder.setGrid(grid);
+        finder.setAcceptableTiles([0]);
+
+        let nextMove: MoveAction | null = null;
+
+        finder.findPath(self.gx, self.gy, target.gx, target.gy, (path) => {
+            if (path && path.length > 1) {
+                // The first point in path is the current position, the second is the next step
+                const nextStep = path[1];
+                nextMove = {
+                    unit: self,
+                    fromGx: self.gx,
+                    fromGy: self.gy,
+                    toGx: nextStep.x,
+                    toGy: nextStep.y
+                };
+            }
+        });
+
+        finder.calculate();
+
+        return nextMove;
     }
 }
