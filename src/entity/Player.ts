@@ -7,7 +7,7 @@ export class Player extends Unit {
     scrap: number = 0;
 
     constructor(scene: Scene) {
-        super("CORE-01", "Tecnomancer.", 100, 5, 20, UnitType.Machine, ['assault_rifle', 'knife'], Faction.Player);
+        super("CORE-01", "Tecnomancer.", 100, 5, 20, UnitType.Machine, ['assault_rifle', 'knife'], Faction.Player, [], [0, 0]);
         this.container = scene.add.container(0, 0);
         
         const size = 48; // A bit smaller than the 64px cell

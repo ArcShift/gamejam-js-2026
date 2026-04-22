@@ -16,6 +16,17 @@ export const narations: Naration[] = [{
             "Now, with this new mechanical body, I am nearly immortal",
             "I will show them who is the real ruler of this world",
         ]
+    }, 
+    {
+        key: "intro-mission-2",
+        title: "Evil shall die",
+        text: [
+            "People who fill with hatred",
+            "People who fill with evil",
+            "They shall die",
+            "For the world to be peaceful place",
+            "Let's kill them all"
+        ]
     }, {
         key: "surrender-ending",
         title: "I'm Surrender",

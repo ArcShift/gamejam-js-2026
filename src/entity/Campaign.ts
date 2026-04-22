@@ -14,6 +14,7 @@ export const campaigns: ICampaign[] = [{
     map_height: 10
 }, {
     title: "Justice Must be serve",
+    opening_naration: "intro-mission-2",
     map_width: 15,
     map_height: 10
 }, {

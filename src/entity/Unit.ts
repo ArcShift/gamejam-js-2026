@@ -9,6 +9,7 @@ export interface IUnit {
     weapon: string[];
     faction: Faction;
     skills: string[];
+    spriteIndex: number[];
 }
 
 export enum Faction {
@@ -36,14 +37,15 @@ export class Unit implements IUnit {
     faction: Faction;
     equippedWeapons: Weapon[];
     skills: string[];
+    spriteIndex: number[];
+
     gx: number = 0;
     gy: number = 0;
-    
     hp: number;
     ap: number = 0;
     selectedWeaponIndex: number = 0;
 
-    constructor(name: string, description: string, maxHp: number, defense: number, speed: number, type: UnitType, weapon: string[], faction: Faction, skills: string[]) {
+    constructor(name: string, description: string, maxHp: number, defense: number, speed: number, type: UnitType, weapon: string[], faction: Faction, skills: string[], spriteIndex: number[]) {
         this.name = name;
         this.description = description;
         this.maxHp = maxHp;
@@ -54,6 +56,7 @@ export class Unit implements IUnit {
         this.weapon = weapon;
         this.faction = faction;
         this.skills = skills;
+        this.spriteIndex = spriteIndex;
         this.equippedWeapons = weapon.map(w => new Weapon(w));
     }
 

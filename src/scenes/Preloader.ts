@@ -33,9 +33,8 @@ export class Preloader extends Scene
         this.load.setPath('assets');
 
         this.load.image('logo', 'logo.png');
-        //load mech sprite sheet
         this.load.spritesheet('machine', 'machine.png', { frameWidth: 200, frameHeight: 200 });
-        //load human sprite sheet
+        this.load.spritesheet('human', 'evil-human.png', { frameWidth: 100, frameHeight: 100 });
         this.load.spritesheet('scrap-metal', 'scrap-metal.png', { frameWidth: 100, frameHeight: 100 });
     }
 

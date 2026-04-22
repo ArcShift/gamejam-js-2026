@@ -123,12 +123,10 @@ export class Narration extends Scene {
         this.typingTimer = this.time.addEvent({
             delay: 40,
             callback: () => {
-                if (this.currentIndex < this.fullText.length) {
-                    this.textGameObject.text += this.fullText[this.currentIndex];
-                    this.currentIndex++;
-                } else {
+                this.textGameObject.text += this.fullText[this.currentIndex];
+                this.currentIndex++;
+                if (this.currentIndex >= this.fullText.length) {
                     this.isTyping = false;
-                    if (this.typingTimer) this.typingTimer.remove();
                 }
             },
             repeat: this.fullText.length - 1

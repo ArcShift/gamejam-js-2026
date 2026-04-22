@@ -4,7 +4,6 @@ import { IUnit, Unit, UnitType, Faction } from "./Unit";
 export interface IMachine extends IUnit {
     cost: number;//scrap metal cost to build
     activeSkill?: string;
-    spriteIndex: number[];//face, normal sprite, enhanced sprite
 }
 
 export class MachineUnit extends Unit {
@@ -12,7 +11,7 @@ export class MachineUnit extends Unit {
     sprite: Phaser.GameObjects.Sprite;
 
     constructor(scene: Scene, template: IMachine, faction: Faction) {
-        super(template.name, template.description, template.maxHp, template.defense, template.speed, UnitType.Machine, template.weapon, faction, template.skills);
+        super(template.name, template.description, template.maxHp, template.defense, template.speed, UnitType.Machine, template.weapon, faction, template.skills, template.spriteIndex);
         
         this.ap = 90; // Start with 90 AP as requested
         
