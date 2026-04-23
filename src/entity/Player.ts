@@ -64,6 +64,14 @@ export class Player extends Unit {
         this.container.setPosition(x, y);
     }
     
+    faceTarget(targetGx: number) {
+        if (targetGx < this.gx) {
+            this.container.setScale(-1, 1);
+        } else if (targetGx > this.gx) {
+            this.container.setScale(1, 1);
+        }
+    }
+
     get x() { return this.container.x; }
     get y() { return this.container.y; }
 }

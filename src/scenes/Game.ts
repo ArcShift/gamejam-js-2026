@@ -430,7 +430,9 @@ export class Game extends Scene
                     const targetY = this.mapOffsetY + move.toGy * this.totalCellSize + this.cellSize / 2;
                     
                     // Visual feedback for AI moving
-                    this.cameras.main.flash(100, 0, 210, 255, true);
+                    // this.cameras.main.flash(100, 0, 210, 255, true);
+
+                    this.player.faceTarget(move.toGx);
 
                     this.tweens.add({
                         targets: this.player.container,
@@ -439,7 +441,6 @@ export class Game extends Scene
                         duration: 300,
                         onComplete: () => {
                             this.units.delete(`${this.player.gx},${this.player.gy}`);
-                            this.player.faceTarget(move.toGx);
                             this.player.gx = move.toGx;
                             this.player.gy = move.toGy;
                             this.units.set(`${move.toGx},${move.toGy}`, this.player);
@@ -1031,7 +1032,7 @@ export class Game extends Scene
         this.units.set(`${gx},${gy}`, machine);
         this.turnManager.registerUnits([...this.units.values()]);
         
-        this.cameras.main.flash(300, 0, 255, 136);
+        // this.cameras.main.flash(300, 0, 255, 136);
         this.clearSummonIndicators();
         this.events.emit('summon-panel-closed');
         

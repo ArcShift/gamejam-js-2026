@@ -197,7 +197,7 @@ export class Sidebar extends GameObjects.Container {
     }
 
     private createDetailsPanel(scene: Scene, width: number, _height?: number) {
-        const y = 0;
+        let y = 0;
         this.detailsContainer = scene.add.container(20, 140);
         this.add(this.detailsContainer);
 
@@ -209,11 +209,11 @@ export class Sidebar extends GameObjects.Container {
         });
 
         this.unitInfo = {
-            name: scene.add.text(0, 25, 'No Unit Selected', { fontSize: '18px', color: '#ffffff' }),
-            hp: scene.add.text(0, 50, '', { fontSize: '13px', color: '#ff5555' }), // Smaller font for row
-            stats: scene.add.text(0, 75, '', { fontSize: '13px', color: '#aaaaaa' }),
-            enhancement: scene.add.text(0, 95, '', { fontSize: '12px', fontFamily: 'Orbitron', color: '#ff00ff' }),
-            desc: scene.add.text(0, 150, '', { fontSize: '12px', color: '#888888', wordWrap: { width: width - 40 } }),
+            name: scene.add.text(0, y+=25, 'No Unit Selected', { fontSize: '18px', color: '#ffffff' }),
+            hp: scene.add.text(0, y, '', { fontSize: '13px', color: '#ff5555' }), // Smaller font for row
+            stats: scene.add.text(0, y+=25, '', { fontSize: '13px', color: '#aaaaaa' }),
+            enhancement: scene.add.text(0, y+=25, 'No Enhancements', { fontSize: '12px', fontFamily: 'Orbitron', color: '#ff00ff' }),
+            desc: scene.add.text(0, y+=50, '', { fontSize: '12px', color: '#888888', wordWrap: { width: width - 40 } }),
         };
 
         this.weaponTitle = scene.add.text(0, 105, 'WEAPONS', {
