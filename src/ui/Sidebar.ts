@@ -69,7 +69,7 @@ export class Sidebar extends GameObjects.Container {
         this.createDetailsPanel(scene, width, height);
 
         // Pause Button (moved to bottom)
-        const pauseBtn = this.createPauseButton(scene, width / 2, height - 90);
+        const pauseBtn = this.createPauseButton(scene, width / 2, height - 50);
         this.add(pauseBtn);
 
         // Collect Scrap Button (hidden by default)
@@ -356,6 +356,10 @@ export class Sidebar extends GameObjects.Container {
             this.summonBtn.y = currentY + 22;
             currentY += 50;
         }
+        if (this.waitBtn.visible) {
+            this.waitBtn.y = currentY + 22;
+            currentY += 50;
+        }
     }
 
     public updateDetails(unit: any | null, scrap: any | null) {
@@ -447,8 +451,11 @@ export class Sidebar extends GameObjects.Container {
 
         if (!unit || unit.name !== 'CORE-01') {
             this.showSummonButton(false);
+            this.showWaitButton(false);
             this.summonPanel.setVisible(false);
             this.detailsContainer.setVisible(true);
+        } else {
+            this.showWaitButton(true);
         }
 
         // Refresh dynamic layout
@@ -481,6 +488,11 @@ export class Sidebar extends GameObjects.Container {
         this.layoutDetails();
     }
 
+    public showWaitButton(visible: boolean) {
+        this.waitBtn.setVisible(visible);
+        this.layoutDetails();
+    }
+
     public openSummonPanel(machines: any[], currentScrap: number) {
         this.detailsContainer.setVisible(false);
         this.summonPanel.setVisible(true);
@@ -488,6 +500,7 @@ export class Sidebar extends GameObjects.Container {
         this.showAttackButton(false);
         this.showCollectButton(false);
         this.showSwitchWeaponButton(false);
+        this.showWaitButton(false);
 
         // Update buttons state
         this.machineButtons.forEach((btn: any, index) => {
@@ -703,7 +716,7 @@ export class Sidebar extends GameObjects.Container {
         const bg = scene.add.rectangle(0, 0, 200, 45, 0x333333);
         bg.setStrokeStyle(2, 0x555555);
 
-        const text = scene.add.text(0, 0, 'PAUSE SYSTEM', {
+        const text = scene.add.text(0, 0, 'PAUSE', {
             fontSize: '16px',
             fontFamily: 'Arial',
             color: '#ffffff',
@@ -746,6 +759,7 @@ export class Sidebar extends GameObjects.Container {
 
         this.waitBtn.add([bg, text]);
         bg.setInteractive({ useHandCursor: true });
+        this.waitBtn.setVisible(false);
 
         bg.on('pointerover', () => bg.setStrokeStyle(2, 0xffffff));
         bg.on('pointerout', () => bg.setStrokeStyle(2, 0x888888));
