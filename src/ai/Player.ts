@@ -8,7 +8,7 @@ const finder = new EasyStar.js();
 finder.enableSync();
 
 export interface PlayerAIAction {
-    type: 'move' | 'collect' | 'summon' | 'pass';
+    type: 'move' | 'collect' | 'summon' | 'wait';
     move?: MoveAction;
     machineIndex?: number;
     summonGx?: number;
@@ -110,7 +110,7 @@ export class PlayerAI {
         }
 
         // 4. If nothing else to do, pass
-        onAction({ type: 'pass' });
+        onAction({ type: 'wait' });
     }
 
     private static findNearestScrap(player: Player, scrapMap: Map<string, any>, unitMap: Map<string, any>): { gx: number, gy: number } | null {

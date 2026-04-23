@@ -452,6 +452,8 @@ export class Game extends Scene
                 } else if (action.type === 'summon') {
                     this.selectedMachineIndex = action.machineIndex!;
                     this.performSummon(action.summonGx!, action.summonGy!, onComplete);
+                } else if (action.type === 'wait') {
+                    this.handleWaitAction(onComplete);
                 } else {
                     onComplete();
                 }
@@ -752,30 +754,7 @@ export class Game extends Scene
             // Handle wait action
             this.events.on('wait-action', () => {
                 if (this.turnManager.state === SystemState.IDLE) {
-                    this.player.ap = Math.max(0, this.player.ap - 20);
-                    
-                    // Visual feedback for wait
-                    const txt = this.add.text(this.player.container.x, this.player.container.y - 40, 'WAITING...', {
-                        fontSize: '14px',
-                        fontFamily: 'Orbitron',
-                        color: '#aaaaaa'
-                    }).setOrigin(0.5);
-                    
-                    this.tweens.add({
-                        targets: txt,
-                        y: txt.y - 40,
-                        alpha: 0,
-                        duration: 800,
-                        onComplete: () => txt.destroy()
-                    });
-
-                    this.events.emit('ap-updated', {
-                        ap: this.player.ap,
-                        turn: this.turnManager.turnCount,
-                        activeUnitName: this.player.name
-                    });
-
-                    this.turnManager.endPlayerAction();
+                    this.handleWaitAction();
                 }
             });
 
@@ -1047,5 +1026,37 @@ export class Game extends Scene
         } else {
             this.turnManager.endPlayerAction();
         }
+    }
+
+    private handleWaitAction(onComplete?: () => void) {
+        this.player.ap = Math.max(0, this.player.ap - 20);
+        
+        // Visual feedback for wait
+        const txt = this.add.text(this.player.container.x, this.player.container.y - 40, 'WAITING...', {
+            fontSize: '14px',
+            fontFamily: 'Orbitron',
+            color: '#aaaaaa'
+        }).setOrigin(0.5).setDepth(20);
+        
+        this.tweens.add({
+            targets: txt,
+            y: txt.y - 40,
+            alpha: 0,
+            duration: 800,
+            onComplete: () => {
+                txt.destroy();
+                if (onComplete) {
+                    onComplete();
+                } else {
+                    this.turnManager.endPlayerAction();
+                }
+            }
+        });
+
+        this.events.emit('ap-updated', {
+            ap: this.player.ap,
+            turn: this.turnManager.turnCount,
+            activeUnitName: this.player.name
+        });
     }
 }
