@@ -1,3 +1,8 @@
+@font-face {
+    font-family: 'Orbitron';
+    src: url('./assets/Orbitron-Medium.ttf') format('truetype');
+}
+
 body {
     margin: 0;
     padding: 0;
