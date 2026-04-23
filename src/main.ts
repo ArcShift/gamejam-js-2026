@@ -6,8 +6,12 @@ import { Campaign } from './scenes/Campaign';
 import { Pause } from './subscene/Pause';
 import { GameUI } from './subscene/GameUI';
 import { Narration } from './scenes/Narration';
-import { AUTO, Game } from 'phaser';
+import { AUTO, Game, GameObjects } from 'phaser';
 import { Preloader } from './scenes/Preloader';
+
+// Set Orbitron as the default font for all Phaser Text objects
+// @ts-ignore
+GameObjects.TextStyle.prototype.fontFamily = 'Orbitron';
 
 //  Find out more information about the Game Config at:
 //  https://docs.phaser.io/api-documentation/typedef/types-core#gameconfig

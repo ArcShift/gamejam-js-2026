@@ -29,7 +29,7 @@ export class GameOver extends Scene
         
         // Title
         const title = this.add.text(width / 2, height / 2 - 50, 'CONNECTION TERMINATED', {
-            fontFamily: 'Orbitron, Arial Black',
+            fontFamily: 'Orbitron',
             fontSize: '48px',
             color: '#ff4444',
             stroke: '#000000',
@@ -38,7 +38,7 @@ export class GameOver extends Scene
 
         // Custom Message
         const subtext = this.add.text(width / 2, height / 2 + 30, this.message.toUpperCase(), {
-            fontFamily: 'Orbitron, monospace',
+            fontFamily: 'Orbitron',
             fontSize: '20px',
             color: '#ffffff',
             align: 'center'
@@ -56,7 +56,7 @@ export class GameOver extends Scene
 
         // Prompt to restart
         const prompt = this.add.text(width / 2, height - 100, 'CLICK TO RETURN TO MISSION HUB', {
-            fontFamily: 'monospace',
+            fontFamily: 'Orbitron',
             fontSize: '16px',
             color: '#888888'
         }).setOrigin(0.5);

@@ -57,7 +57,6 @@ export class Sidebar extends GameObjects.Container {
         // Header Title
         const title = scene.add.text(width / 2, 25, 'COMMAND', {
             fontSize: '20px',
-            fontFamily: 'Orbitron, Arial Black',
             color: '#00ffff'
         }).setOrigin(0.5);
         this.add(title);
@@ -106,7 +105,6 @@ export class Sidebar extends GameObjects.Container {
         // Turn counter
         this.turnText = scene.add.text(padX, panelY + 8, 'TURN: 0', {
             fontSize: '13px',
-            fontFamily: 'Orbitron, monospace',
             color: '#888888'
         });
         this.add(this.turnText);
@@ -114,7 +112,6 @@ export class Sidebar extends GameObjects.Container {
         // Phase indicator
         this.phaseText = scene.add.text(width - padX, panelY + 8, 'YOUR TURN', {
             fontSize: '13px',
-            fontFamily: 'Orbitron, monospace',
             color: '#00ff88'
         }).setOrigin(1, 0);
         this.add(this.phaseText);
@@ -122,7 +119,6 @@ export class Sidebar extends GameObjects.Container {
         // AP Label
         this.apLabelText = scene.add.text(padX, panelY + 30, 'ACTION POINTS', {
             fontSize: '11px',
-            fontFamily: 'Orbitron, monospace',
             color: '#00ccff'
         });
         this.add(this.apLabelText);
@@ -130,7 +126,7 @@ export class Sidebar extends GameObjects.Container {
         // AP Value text
         this.apValueText = scene.add.text(width - padX, panelY + 30, '0 / 100', {
             fontSize: '11px',
-            fontFamily: 'monospace',
+            fontFamily: 'Orbitron',
             color: '#ffffff'
         }).setOrigin(1, 0);
         this.add(this.apValueText);
@@ -193,7 +189,6 @@ export class Sidebar extends GameObjects.Container {
         // Unit Section
         this.unitTitle = scene.add.text(0, y, 'UNIT DATA', {
             fontSize: '14px',
-            fontFamily: 'Arial Black',
             color: '#00ffff'
         });
 
@@ -201,13 +196,12 @@ export class Sidebar extends GameObjects.Container {
             name: scene.add.text(0, y+=25, 'No Unit Selected', { fontSize: '18px', color: '#ffffff' }),
             hp: scene.add.text(0, y, '', { fontSize: '13px', color: '#ff5555' }), // Smaller font for row
             stats: scene.add.text(0, y+=25, '', { fontSize: '13px', color: '#aaaaaa' }),
-            enhancement: scene.add.text(0, y+=25, 'No Enhancements', { fontSize: '12px', fontFamily: 'Orbitron', color: '#ff00ff' }),
+            enhancement: scene.add.text(0, y+=25, 'No Enhancements', { fontSize: '12px', color: '#ff00ff' }),
             desc: scene.add.text(0, y+=50, '', { fontSize: '12px', color: '#888888', wordWrap: { width: width - 40 } }),
         };
 
         this.weaponTitle = scene.add.text(0, 105, 'WEAPONS', {
             fontSize: '11px',
-            fontFamily: 'Arial Black',
             color: '#00ccff',
         });
         this.weaponTitle.setAlpha(0.7);
@@ -217,7 +211,6 @@ export class Sidebar extends GameObjects.Container {
         // Scrap Section
         this.scrapTitle = scene.add.text(0, 250, 'RESOURCES', {
             fontSize: '14px',
-            fontFamily: 'Orbitron',
             color: '#ffaa00'
         });
 
@@ -228,7 +221,6 @@ export class Sidebar extends GameObjects.Container {
 
         this.carriedScrapText = scene.add.text(0, 325, '', {
             fontSize: '12px',
-            fontFamily: 'Orbitron',
             color: '#00ffff'
         });
 
@@ -385,7 +377,6 @@ export class Sidebar extends GameObjects.Container {
 
                     const weaponTxt = this.scene.add.text(0, index * 18, `${prefix}${w.name.toUpperCase()} [${w.currentAmmo}/${w.maxAmmo}]`, {
                         fontSize: '11px',
-                        fontFamily: 'Orbitron',
                         color: color
                     });
 
@@ -539,7 +530,6 @@ export class Sidebar extends GameObjects.Container {
 
         this.collectBtnText = scene.add.text(0, 0, 'COLLECT', {
             fontSize: '11px', // Smaller font for potential side-by-side
-            fontFamily: 'Orbitron',
             color: '#ffffff'
         }).setOrigin(0.5);
 
@@ -569,7 +559,6 @@ export class Sidebar extends GameObjects.Container {
 
         this.attackBtnText = scene.add.text(0, 0, 'ATTACK', {
             fontSize: '11px', // Smaller font for potential side-by-side
-            fontFamily: 'Orbitron',
             color: '#ffffff'
         }).setOrigin(0.5);
 
@@ -599,7 +588,6 @@ export class Sidebar extends GameObjects.Container {
 
         this.switchWeaponBtnText = scene.add.text(0, 0, 'SWITCH WEAPON', {
             fontSize: '14px',
-            fontFamily: 'Orbitron',
             color: '#ffffff'
         }).setOrigin(0.5);
 
@@ -629,7 +617,6 @@ export class Sidebar extends GameObjects.Container {
 
         this.summonBtnText = scene.add.text(0, 0, 'CONSTRUCT MACHINE', {
             fontSize: '14px',
-            fontFamily: 'Orbitron',
             color: '#ffffff'
         }).setOrigin(0.5);
 
@@ -659,7 +646,6 @@ export class Sidebar extends GameObjects.Container {
 
         const title = scene.add.text(20, 0, 'SELECT MACHINE', {
             fontSize: '14px',
-            fontFamily: 'Orbitron',
             color: '#00ff88'
         });
         this.summonPanel.add(title);
@@ -676,13 +662,12 @@ export class Sidebar extends GameObjects.Container {
 
             const txt = scene.add.text(-90, 0, name, {
                 fontSize: '14px',
-                fontFamily: 'Orbitron',
                 color: '#ffffff'
             }).setOrigin(0, 0.5);
 
             const costTxt = scene.add.text(90, 0, `${machineCosts[i]} S`, {
                 fontSize: '13px',
-                fontFamily: 'monospace',
+                fontFamily: 'Orbitron',
                 color: '#00ff88'
             }).setOrigin(1, 0.5);
 
@@ -718,7 +703,7 @@ export class Sidebar extends GameObjects.Container {
 
         const text = scene.add.text(0, 0, 'PAUSE', {
             fontSize: '16px',
-            fontFamily: 'Arial',
+            fontFamily: 'Orbitron',
             color: '#ffffff',
         }).setOrigin(0.5);
 
@@ -753,7 +738,6 @@ export class Sidebar extends GameObjects.Container {
 
         const text = scene.add.text(0, 0, 'WAIT (20 AP)', {
             fontSize: '14px',
-            fontFamily: 'Orbitron',
             color: '#ffffff'
         }).setOrigin(0.5);
 

@@ -797,7 +797,7 @@ export class Game extends Scene
 
         const text = this.add.text(tx, ty, 'NOT ENOUGH AP!', {
             fontSize: '14px',
-            fontFamily: 'Orbitron, Arial',
+            fontFamily: 'Orbitron',
             color: '#ff4444',
             stroke: '#000000',
             strokeThickness: 3,
@@ -820,7 +820,7 @@ export class Game extends Scene
 
         const text = this.add.text(tx, ty, 'STORAGE FULL!', {
             fontSize: '14px',
-            fontFamily: 'Orbitron, Arial',
+            fontFamily: 'Orbitron',
             color: '#ffaa00',
             stroke: '#000000',
             strokeThickness: 3,

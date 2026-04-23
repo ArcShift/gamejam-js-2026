@@ -26,7 +26,7 @@ export class Boot extends Scene {
                     padding: '4px 8px',
                     backgroundColor: 'rgba(0,0,0,0.5)',
                     color: '#00ff00',
-                    fontFamily: 'monospace',
+                    fontFamily: 'Orbitron',
                     fontSize: '12px',
                     zIndex: '9999',
                     pointerEvents: 'none',

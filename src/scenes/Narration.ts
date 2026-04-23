@@ -55,7 +55,7 @@ export class Narration extends Scene {
         // Header
         this.titleGameObject = this.add.text(width / 2, 100, '', {
             fontSize: '32px',
-            fontFamily: 'Orbitron, Arial Black',
+            fontFamily: 'Orbitron',
             color: '#00ffff',
             stroke: '#004444',
             strokeThickness: 2
@@ -68,7 +68,7 @@ export class Narration extends Scene {
         // Narration text
         this.textGameObject = this.add.text(width / 2, height / 2, '', {
             fontSize: '28px',
-            fontFamily: 'Orbitron, Arial',
+            fontFamily: 'Orbitron',
             color: '#ffffff',
             align: 'center',
             wordWrap: { width: width * 0.7 },
@@ -78,7 +78,7 @@ export class Narration extends Scene {
         // Continue prompt (blinking)
         const prompt = this.add.text(width / 2, height - 80, '>>> CLICK TO CONTINUE <<<', {
             fontSize: '16px',
-            fontFamily: 'Orbitron, Arial',
+            fontFamily: 'Orbitron',
             color: '#00ffff',
         }).setOrigin(0.5);
 

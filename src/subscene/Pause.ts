@@ -22,7 +22,7 @@ export class Pause extends Scene {
         
         const title = this.add.text(0, -160, 'SYSTEM PAUSED', {
             fontSize: '32px',
-            fontFamily: 'Orbitron, Arial Black',
+            fontFamily: 'Orbitron',
             color: '#00ffff'
         }).setOrigin(0.5);
 

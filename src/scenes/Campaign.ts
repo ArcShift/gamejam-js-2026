@@ -35,7 +35,7 @@ export class Campaign extends Scene {
         const headerContainer = this.add.container(width / 2, 60);
         const titleText = this.add.text(0, 0, 'MISSION SELECTION', {
             fontSize: '42px',
-            fontFamily: 'Orbitron, Arial Black',
+            fontFamily: 'Orbitron',
             color: '#00ffff',
             stroke: '#004444',
             strokeThickness: 4
@@ -98,7 +98,7 @@ export class Campaign extends Scene {
             // Label
             const label = this.add.text(0, 35, mission.title, {
                 fontSize: '14px',
-                fontFamily: 'Arial',
+                fontFamily: 'Orbitron',
                 color: isUnlocked ? '#ffffff' : '#666666',
                 align: 'center'
             }).setOrigin(0.5);
@@ -163,7 +163,7 @@ export class Campaign extends Scene {
         // Add back button
         const backBtn = this.add.text(width - 50, height - 30, 'BACK TO MENU', {
             fontSize: '18px',
-            fontFamily: 'Arial',
+            fontFamily: 'Orbitron',
             color: '#aaaaaa'
         }).setOrigin(1, 0.5).setInteractive({ useHandCursor: true });
 
