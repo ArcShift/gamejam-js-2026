@@ -85,10 +85,6 @@ export class GameUI extends Scene {
             this.sidebar.updateAP(data.ap, data.turn, data.activeUnitName);
         });
 
-        gameScene.events.on('auto-toggled', (isEnabled: boolean) => {
-            this.sidebar.updateAutoButton(isEnabled);
-        });
-
         // Clear details when mission restarts or UI is reset
         this.events.on('shutdown', () => {
             gameScene.events.off('cell-selected');
