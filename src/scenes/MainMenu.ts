@@ -13,6 +13,11 @@ export class MainMenu extends Scene
 
     create ()
     {
+        const menu= [
+            {title:'Play', scene: 'Campaign', },
+            {title:'Tutorial', scene: 'Tutorial'}
+        ]
+
         this.background = this.add.image(512, 384, 'background');
 
         this.logo = this.add.image(512, 300, 'logo');

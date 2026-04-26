@@ -75,7 +75,7 @@ export class Pause extends Scene {
         // Finish Mission (Dev Only)
         let devButtons: any[] = [];
         if ("dev" === import.meta.env.VITE_ENV) {
-            const finishBtn = this.add.container(0, 60);
+            const finishBtn = this.add.container(0, 140);
             const finishBg = this.add.rectangle(0, 0, 250, 50, 0x004400, 0.5);
             finishBg.setStrokeStyle(2, 0x00aa00);
             const finishText = this.add.text(0, 0, 'FINISH MISSION', {
@@ -94,13 +94,21 @@ export class Pause extends Scene {
         }
 
         // Quit Button (Back to Menu)
-        const quitBtn = this.add.text(0, 140, 'QUIT TO MAIN MENU', {
-            fontSize: '14px',
+        const quitBtn = this.add.container(0, 60);
+        const quitBg = this.add.rectangle(0, 0, 250, 50, 0xff4444, 0.1);
+        quitBg.setStrokeStyle(2, 0xff4444);
+        const quitText = this.add.text(0, 0, 'QUIT TO MAIN MENU', {
+            fontSize: '18px',
             fontFamily: 'Orbitron',
-            color: '#ff4444'
-        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+            color: '#ffffff'
+        }).setOrigin(0.5);
 
-        quitBtn.on('pointerdown', () => {
+        quitBtn.add([quitBg, quitText]);
+        quitBg.setInteractive({ useHandCursor: true });
+
+        quitBg.on('pointerover', () => quitBg.setFillStyle(0xff4444, 0.3));
+        quitBg.on('pointerout', () => quitBg.setFillStyle(0xff4444, 0.1));
+        quitBg.on('pointerdown', () => {
             this.scene.stop('Game');
             this.scene.stop('GameUI');
             this.scene.stop();
