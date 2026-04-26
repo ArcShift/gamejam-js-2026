@@ -7,7 +7,7 @@ import { Scrap } from '../entity/Scrap';
 import { HumanUnit, humans } from '../entity/HumanUnit';
 import { MachineUnit, machineUnits } from '../entity/MachineUnit';
 import { TurnManager, SystemState } from '../system/TurnManager';
-import { Unit, UnitType, Faction } from '../entity/Unit';
+import { Unit, UnitType, Faction, AP_MOVE_COST } from '../entity/Unit';
 import { sevenSinEnhancements } from '../entity/SevenSinEnhancement';
 
 export class Game extends Scene
@@ -429,6 +429,8 @@ export class Game extends Scene
                     const targetX = this.mapOffsetX + move.toGx * this.totalCellSize + this.cellSize / 2;
                     const targetY = this.mapOffsetY + move.toGy * this.totalCellSize + this.cellSize / 2;
                     
+                    this.player.ap -= AP_MOVE_COST;
+
                     // Visual feedback for AI moving
                     // this.cameras.main.flash(100, 0, 210, 255, true);
 
@@ -733,21 +735,6 @@ export class Game extends Scene
                     }
 
                     this.events.emit('cell-selected', { unit, scrap, canAttack, attackCost });
-                }
-            });
-
-            // Handle AI toggle action
-            this.events.on('toggle-auto-action', () => {
-                this.turnManager.isAIEnabled = !this.turnManager.isAIEnabled;
-                this.events.emit('auto-toggled', this.turnManager.isAIEnabled);
-                
-                // If it's the player's turn and they were idling, start the AI
-                if (this.turnManager.isAIEnabled && 
-                    this.turnManager.currentUnit instanceof Player && 
-                    this.turnManager.state === SystemState.IDLE) {
-                    
-                    this.turnManager.state = SystemState.PROCESSING;
-                    this.turnManager.runPlayerAI();
                 }
             });
 

@@ -99,9 +99,9 @@ export class PlayerAI {
 
         // 4. Move toward nearest scrap if not full
         if (player.scrap < Player.MAX_SCRAP) {
-            const nearestScrap = this.findNearestScrap(player, scrapMap, unitMap);
-            if (nearestScrap) {
-                const move = this.findPathMove(player, nearestScrap.gx, nearestScrap.gy, unitMap, mapWidth, mapHeight);
+            const sortedScraps = this.findSortedScraps(player, scrapMap, unitMap);
+            for (const scrap of sortedScraps) {
+                const move = this.findPathMove(player, scrap.gx, scrap.gy, unitMap, mapWidth, mapHeight);
                 if (move) {
                     onAction({ type: 'move', move });
                     return;
@@ -113,9 +113,8 @@ export class PlayerAI {
         onAction({ type: 'wait' });
     }
 
-    private static findNearestScrap(player: Player, scrapMap: Map<string, any>, unitMap: Map<string, any>): { gx: number, gy: number } | null {
-        let nearest: { gx: number, gy: number } | null = null;
-        let minDist = Infinity;
+    private static findSortedScraps(player: Player, scrapMap: Map<string, any>, unitMap: Map<string, any>): { gx: number, gy: number, dist: number }[] {
+        let scraps: { gx: number, gy: number, dist: number }[] = [];
 
         for (const [key, scrap] of scrapMap.entries()) {
             const [gx, gy] = key.split(',').map(Number);
@@ -125,13 +124,11 @@ export class PlayerAI {
             if (unitAtScrap && unitAtScrap !== player) continue;
 
             const dist = Math.abs(player.gx - gx) + Math.abs(player.gy - gy);
-            
-            if (dist < minDist) {
-                minDist = dist;
-                nearest = { gx, gy };
-            }
+            scraps.push({ gx, gy, dist });
         }
-        return nearest;
+        
+        scraps.sort((a, b) => a.dist - b.dist);
+        return scraps;
     }
 
     private static getFreeNeighbors(gx: number, gy: number, unitMap: Map<string, any>, mapWidth: number, mapHeight: number): {gx: number, gy: number, dx: number, dy: number}[] {

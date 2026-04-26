@@ -76,15 +76,23 @@ export class Pause extends Scene {
         });
 
         autoBg.on('pointerdown', () => {
-            gameScene.events.emit('toggle-auto-action');
-            // Small delay to ensure Game scene has processed the event if it's async for some reason
-            this.time.delayedCall(10, () => {
-                const nowEnabled = gameScene.turnManager.isAIEnabled;
-                autoText.setText(nowEnabled ? 'AUTO MODE: ON' : 'AUTO MODE: OFF');
-                autoText.setColor(nowEnabled ? '#00ff88' : '#aaaaaa');
-                autoBg.setFillStyle(nowEnabled ? 0x00ff88 : 0x333333, 0.2);
-                autoBg.setStrokeStyle(2, nowEnabled ? 0x00ff88 : 0x666666);
-            });
+            const tm = gameScene.turnManager;
+            tm.isAIEnabled = !tm.isAIEnabled;
+            const nowEnabled = tm.isAIEnabled;
+            
+            // Update UI immediately
+            autoText.setText(nowEnabled ? 'AUTO MODE: ON' : 'AUTO MODE: OFF');
+            autoText.setColor(nowEnabled ? '#00ff88' : '#aaaaaa');
+            autoBg.setFillStyle(nowEnabled ? 0x00ff88 : 0x333333, 0.2);
+            autoBg.setStrokeStyle(2, nowEnabled ? 0x00ff88 : 0x666666);
+            
+            gameScene.events.emit('auto-toggled', nowEnabled);
+
+            // If we just turned it on and the player is currently waiting for input, start the AI
+            if (nowEnabled && tm.currentUnit && tm.currentUnit.name === 'CORE-01' && tm.state === 0) {
+                tm.state = 1; // PROCESSING
+                tm.runPlayerAI();
+            }
         });
 
         // Finish Mission (Dev Only)
