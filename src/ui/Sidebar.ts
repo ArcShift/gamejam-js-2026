@@ -521,6 +521,7 @@ export class Sidebar extends GameObjects.Container {
         this.summonPanel.setVisible(false);
         this.detailsContainer.setVisible(true);
         this.showSummonButton(true);
+        this.showWaitButton(true);
     }
 
     private createCollectButton(scene: Scene, x: number, y: number) {
@@ -733,7 +734,7 @@ export class Sidebar extends GameObjects.Container {
 
     private createWaitButton(scene: Scene, x: number, y: number) {
         this.waitBtn = scene.add.container(x, y);
-        const bg = scene.add.rectangle(0, 0, 180, 35, 0x444444);
+        const bg = scene.add.rectangle(0, 0, 200, 45, 0x444444);
         bg.setStrokeStyle(2, 0x888888);
 
         const text = scene.add.text(0, 0, 'WAIT (20 AP)', {

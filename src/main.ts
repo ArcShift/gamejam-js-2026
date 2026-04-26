@@ -6,6 +6,7 @@ import { Campaign } from './scenes/Campaign';
 import { Pause } from './subscene/Pause';
 import { GameUI } from './subscene/GameUI';
 import { Narration } from './scenes/Narration';
+import { Tutorial } from './scenes/Tutorial';
 import { AUTO, Game, GameObjects } from 'phaser';
 import { Preloader } from './scenes/Preloader';
 
@@ -28,6 +29,7 @@ const config: Phaser.Types.Core.GameConfig = {
         Boot,
         Preloader,
         MainMenu,
+        Tutorial,
         Campaign,
         Narration,
         MainGame,

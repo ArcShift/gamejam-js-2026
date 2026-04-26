@@ -93,6 +93,25 @@ export class Narration extends Scene {
         // Typing effect
         this.displayNextPage();
 
+        // Skip Button (Top Right)
+        const skipBtn = this.add.container(width - 80, 50);
+        const skipBg = this.add.rectangle(0, 0, 100, 35, 0x00ffff, 0.1);
+        skipBg.setStrokeStyle(1, 0x00ffff);
+        const skipText = this.add.text(0, 0, 'SKIP', {
+            fontSize: '14px',
+            fontFamily: 'Orbitron',
+            color: '#00ffff'
+        }).setOrigin(0.5);
+        skipBtn.add([skipBg, skipText]);
+
+        skipBg.setInteractive({ useHandCursor: true });
+        skipBg.on('pointerover', () => skipBg.setFillStyle(0x00ffff, 0.3));
+        skipBg.on('pointerout', () => skipBg.setFillStyle(0x00ffff, 0.1));
+        skipBg.on('pointerdown', (pointer: Phaser.Input.Pointer, _localX: number, _localY: number, event: Phaser.Types.Input.EventData) => {
+            event.stopPropagation();
+            this.transitionToNext();
+        });
+
         this.input.on('pointerdown', () => {
             if (this.isTyping) {
                 this.completeTyping();

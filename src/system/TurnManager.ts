@@ -40,6 +40,8 @@ export class TurnManager {
     onTurnTick: (() => void) | null = null;
     onSkill: ((unit: Unit, skillKey: string, targetGx: number, targetGy: number, onComplete: () => void) => void) | null = null;
     onPlayerAIAction: ((action: PlayerAIAction, onComplete: () => void) => void) | null = null;
+    onPlayerTurnStart: (() => void) | null = null;
+    onLose: (() => void) | null = null;
 
     constructor(player: Player, unitMap: Map<string, any>, deadBodies: Map<string, any>, scrapMap: Map<string, any>) {
         this.player = player;
@@ -79,6 +81,14 @@ export class TurnManager {
         this.currentUnit = highestAPUnit;
 
         if (this.currentUnit instanceof Player) {
+            if (this.onPlayerTurnStart) this.onPlayerTurnStart();
+
+            // Check if surrounded
+            if (this.isPlayerSurrounded() && this.onLose) {
+                this.onLose();
+                return;
+            }
+
             // AUTOMATIC PLAYER AI OR MANUAL
             if (this.isAIEnabled) {
                 this.state = SystemState.PROCESSING;
@@ -209,6 +219,25 @@ export class TurnManager {
                 setTimeout(() => this.nextTurn(), 10);
             }
         );
+    }
+
+    private isPlayerSurrounded(): boolean {
+        const neighbors = [
+            { dx: 0, dy: -1 }, { dx: 0, dy: 1 },
+            { dx: -1, dy: 0 }, { dx: 1, dy: 0 }
+        ];
+
+        for (const n of neighbors) {
+            const nx = this.player.gx + n.dx;
+            const ny = this.player.gy + n.dy;
+
+            if (nx >= 0 && nx < this.mapWidth && ny >= 0 && ny < this.mapHeight) {
+                if (!this.unitMap.has(`${nx},${ny}`)) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
 }
