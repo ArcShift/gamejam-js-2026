@@ -63,13 +63,25 @@ export class Pause extends Scene {
         autoBtn.add([autoBg, autoText]);
         autoBg.setInteractive({ useHandCursor: true });
 
+        autoBg.on('pointerover', () => {
+            const currentEnabled = gameScene.turnManager.isAIEnabled;
+            autoBg.setFillStyle(currentEnabled ? 0x00ff88 : 0xffffff, 0.3);
+        });
+        autoBg.on('pointerout', () => {
+            const currentEnabled = gameScene.turnManager.isAIEnabled;
+            autoBg.setFillStyle(currentEnabled ? 0x00ff88 : 0x333333, 0.2);
+        });
+
         autoBg.on('pointerdown', () => {
             gameScene.events.emit('toggle-auto-action');
-            const nowEnabled = gameScene.turnManager.isAIEnabled;
-            autoText.setText(nowEnabled ? 'AUTO MODE: ON' : 'AUTO MODE: OFF');
-            autoText.setColor(nowEnabled ? '#00ff88' : '#aaaaaa');
-            autoBg.setFillStyle(nowEnabled ? 0x00ff88 : 0x333333, 0.2);
-            autoBg.setStrokeStyle(2, nowEnabled ? 0x00ff88 : 0x666666);
+            // Small delay to ensure Game scene has processed the event if it's async for some reason
+            this.time.delayedCall(10, () => {
+                const nowEnabled = gameScene.turnManager.isAIEnabled;
+                autoText.setText(nowEnabled ? 'AUTO MODE: ON' : 'AUTO MODE: OFF');
+                autoText.setColor(nowEnabled ? '#00ff88' : '#aaaaaa');
+                autoBg.setFillStyle(nowEnabled ? 0x00ff88 : 0x333333, 0.2);
+                autoBg.setStrokeStyle(2, nowEnabled ? 0x00ff88 : 0x666666);
+            });
         });
 
         // Finish Mission (Dev Only)
