@@ -6,16 +6,19 @@ export class Pause extends Scene {
     }
 
     create() {
+        this.cameras.main.setScroll(0, 0);
         const { width, height } = this.scale;
 
         // Dim background
         const dim = this.add.rectangle(0, 0, width, height, 0x000000, 0.6);
         dim.setOrigin(0);
+        dim.setScrollFactor(0);
 
         // Pause Panel
         const panelWidth = 400;
         const panelHeight = 420;
         const panel = this.add.container(width / 2, height / 2);
+        panel.setScrollFactor(0);
 
         const bg = this.add.rectangle(0, 0, panelWidth, panelHeight, 0x111111, 0.9);
         bg.setStrokeStyle(4, 0x00ffff);
